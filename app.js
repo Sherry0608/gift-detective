@@ -679,9 +679,20 @@ function dateCode() {
 }
 
 // ---------- 分享：保存图片 ----------
+function isMobileUA() {
+  return /Mobi|Android|iPhone|iPad|iPod|HarmonyOS/i.test(navigator.userAgent);
+}
+function isWechatUA() {
+  return /MicroMessenger/i.test(navigator.userAgent);
+}
+
 async function saveAsImage() {
   const root = document.getElementById("resultRoot");
   const app = document.getElementById("app");
+  if (typeof html2canvas !== "function") {
+    showToast("图片组件未加载，请检查网络");
+    return;
+  }
   app.classList.add("snapshot-mode");
   showToast("正在生成图片...");
   try {
@@ -691,23 +702,44 @@ async function saveAsImage() {
       useCORS: true,
       logging: false
     });
-    canvas.toBlob(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `礼物侦探_${state.persona}_${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showToast("已保存，去发给 TA 吧 ✨");
-    });
+    const dataUrl = canvas.toDataURL("image/png");
+    showImageModal(dataUrl);
   } catch (e) {
     showToast("生成失败，请重试");
     console.error(e);
   } finally {
     app.classList.remove("snapshot-mode");
   }
+}
+
+function showImageModal(dataUrl) {
+  const modal = document.getElementById("imageModal");
+  const img = document.getElementById("imageModalImg");
+  const dl = document.getElementById("imageModalDownload");
+  const hint = document.getElementById("imageModalHint");
+  img.src = dataUrl;
+  // 文件名用 ASCII 安全名，避免某些浏览器 download 属性必到中文被忽略
+  const safeName = `gift-detective-${state.persona || "report"}-${Date.now()}.png`;
+  dl.href = dataUrl;
+  dl.download = safeName;
+  // 提示文案适配环境
+  if (isWechatUA()) {
+    hint.textContent = "长按图片 · 选择「保存到相册」或「分享」";
+    dl.hidden = true;
+  } else if (isMobileUA()) {
+    hint.textContent = "长按图片 · 选择「保存」到相册";
+    dl.hidden = false;
+  } else {
+    hint.textContent = "右键「另存为」，或点下方按钮直接下载";
+    dl.hidden = false;
+  }
+  modal.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeImageModal() {
+  document.getElementById("imageModal").hidden = true;
+  document.body.style.overflow = "";
 }
 
 // ---------- 分享：微信 ----------
@@ -929,6 +961,11 @@ function init() {
   });
 
   document.getElementById("saveImgBtn").addEventListener("click", saveAsImage);
+  document.getElementById("closeImageModal").addEventListener("click", closeImageModal);
+  // 点击遮罩关闭
+  document.getElementById("imageModal").addEventListener("click", e => {
+    if (e.target.id === "imageModal") closeImageModal();
+  });
   document.getElementById("wechatBtn").addEventListener("click", shareToWechat);
   document.getElementById("copyLinkBtn").addEventListener("click", copyLink);
   document.getElementById("retryBtn").addEventListener("click", restart);

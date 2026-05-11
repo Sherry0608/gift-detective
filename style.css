@@ -1082,6 +1082,65 @@ textarea, input { font-family: inherit; }
 .modal-card h3 { font-size: 20px; margin-bottom: 10px; }
 .modal-card p { color: var(--ink-soft); font-size: 14px; margin-bottom: 18px; }
 
+/* 图片预览弹层 */
+.image-modal-card {
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  text-align: left;
+  padding: 18px 18px 16px;
+  overflow: hidden;
+}
+.image-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.image-modal-head h3 { margin: 0; font-size: 17px; }
+.icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  font-size: 20px; line-height: 1;
+  color: var(--ink-soft);
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+}
+.icon-btn:hover { background: var(--cream-2); color: var(--ink); }
+.image-modal-hint {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 12px !important;
+  text-align: center;
+}
+.image-preview-wrap {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--cream);
+  margin-bottom: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+.image-preview-wrap img {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-touch-callout: default;  /* iOS 允许长按菜单 */
+  touch-callout: default;
+  user-select: auto;
+  -webkit-user-select: auto;
+}
+.image-modal-actions {
+  display: flex; justify-content: center;
+}
+.image-modal-actions .primary-btn {
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  padding: 12px 24px;
+}
+
 /* Toast */
 .toast {
   position: fixed; left: 50%; bottom: 28px;

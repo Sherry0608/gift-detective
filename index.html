@@ -178,6 +178,23 @@
     </div>
   </div>
 
+  <!-- ============ 图片预览/保存弹层 ============ -->
+  <div class="modal" id="imageModal" hidden>
+    <div class="modal-card image-modal-card">
+      <div class="image-modal-head">
+        <h3>保存给 TA</h3>
+        <button class="icon-btn" id="closeImageModal" aria-label="关闭">×</button>
+      </div>
+      <p class="image-modal-hint" id="imageModalHint">长按图片 · 选择保存到相册</p>
+      <div class="image-preview-wrap">
+        <img id="imageModalImg" alt="礼物侦探报告"/>
+      </div>
+      <div class="image-modal-actions">
+        <a class="primary-btn" id="imageModalDownload" download>⬇ 下载到本地</a>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 微信分享提示弹层 ============ -->
   <div class="modal" id="wechatModal" hidden>
     <div class="modal-card">
