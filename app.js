@@ -509,6 +509,11 @@ function renderResult() {
     const jdQ = encodeURIComponent(g.jdQuery || g.searchQuery || g.name);
     const tbUrl = `https://s.taobao.com/search?q=${tbQ}`;
     const jdUrl = `https://search.jd.com/Search?keyword=${jdQ}&enc=utf-8`;
+    // 线下渠道礼物：用大众点评 + 小红书搜索
+    const offlineQ = encodeURIComponent(g.searchQuery || g.name);
+    const dpUrl = `https://www.dianping.com/search/keyword/0/0_${offlineQ}`;
+    const xhsUrl = `https://www.xiaohongshu.com/search_result?keyword=${offlineQ}`;
+    const isOffline = g.channel === 'offline';
     let badge;
     if (kind === "entity") {
       const tagLabel = g.canonical || g.name;
@@ -535,13 +540,23 @@ function renderResult() {
           <div class="gift-badge-row">${badge}</div>
           <div class="gift-reason">${g.reason}</div>
           <div class="gift-shop-row">
+            ${isOffline ? `
+            <a class="shop-btn dp" href="${dpUrl}" target="_blank" rel="noopener noreferrer">
+              <span class="shop-mark dp-mark">点</span> 大众点评
+            </a>
+            <a class="shop-btn xhs" href="${xhsUrl}" target="_blank" rel="noopener noreferrer">
+              <span class="shop-mark xhs-mark">书</span> 小红书
+            </a>
+            ` : `
             <a class="shop-btn tb" href="${tbUrl}" target="_blank" rel="noopener noreferrer">
               <span class="shop-mark">淘</span> 淘宝搜
             </a>
             <a class="shop-btn jd" href="${jdUrl}" target="_blank" rel="noopener noreferrer">
               <span class="shop-mark jd-mark">JD</span> 京东搜
             </a>
+            `}
           </div>
+          ${isOffline && g.channelHint ? `<div class="gift-channel-hint">🏪 ${g.channelHint}</div>` : ''}
         </div>
       </div>
     `;

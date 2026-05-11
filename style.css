@@ -918,8 +918,44 @@ textarea, input { font-family: inherit; }
 }
 .shop-btn:active { transform: translateY(0); }
 
+/* 线下渠道：大众点评 / 小红书 */
+.shop-mark.dp-mark {
+  background: #FFB000;
+  color: #fff;
+  font-size: 8.5px;
+  letter-spacing: -.3px;
+}
+.shop-mark.xhs-mark {
+  background: #FF2442;
+  font-size: 9px;
+  letter-spacing: -.3px;
+}
+.shop-btn.dp { border-color: rgba(255,176,0,.28); }
+.shop-btn.xhs { border-color: rgba(255,36,66,.22); }
+@media (hover: hover) {
+  .shop-btn.dp:hover {
+    background: rgba(255,176,0,.08);
+    border-color: rgba(255,176,0,.50);
+    transform: translateY(-1px);
+  }
+  .shop-btn.xhs:hover {
+    background: rgba(255,36,66,.06);
+    border-color: rgba(255,36,66,.45);
+    transform: translateY(-1px);
+  }
+}
+.gift-channel-hint {
+  font-size: 12px;
+  color: var(--ink-mute);
+  font-style: italic;
+  margin-top: 6px;
+  line-height: 1.45;
+  padding-left: 2px;
+}
+
 /* 截图模式下隐藏购买按钮 */
 .snapshot-mode .gift-shop-row { display: none; }
+.snapshot-mode .gift-channel-hint { display: none; }
 .snapshot-mode .gift-card-entity { background: none; }
 
 /* 预算不足的空态 */
