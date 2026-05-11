@@ -91,6 +91,14 @@ textarea, input { font-family: inherit; }
 .link-btn:hover { color: var(--berry); background: var(--berry-soft); }
 
 /* ============ 16 型图鉴 ============ */
+.gallery-back {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.gallery-back:hover { color: var(--ink); }
 .gallery-head { padding: 8px 4px 16px; }
 .gallery-head h2 {
   font-size: clamp(24px, 6.5vw, 30px);

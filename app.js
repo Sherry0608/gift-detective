@@ -138,6 +138,12 @@ function goto(screen) {
   // 重新调查按钮与图鉴入口
   document.getElementById("restartBtn").hidden = (screen === "cover" || screen === "gallery");
   document.getElementById("gallery-entry").hidden = (screen === "gallery");
+
+  // 图鉴返回按钮：只在从结果页进入时显示
+  const galleryBack = document.getElementById("galleryBack");
+  if (galleryBack) {
+    galleryBack.hidden = !(screen === "gallery" && state._galleryReturnTo === "result");
+  }
 }
 
 // ---------- 渲染 Step 1 关系 ----------
@@ -658,6 +664,7 @@ function renderResult() {
   setTimeout(() => {
     const mb = document.getElementById("moreTypesBtn");
     if (mb) mb.addEventListener("click", () => {
+      state._galleryReturnTo = "result";
       renderGallery();
       goto("gallery");
     });
@@ -931,8 +938,19 @@ function init() {
 
   // 图鉴入口
   document.getElementById("gallery-entry").addEventListener("click", () => {
+    // 记住来源屏：在结果页点进可返回结果，其他场景返回首页
+    const cur = document.querySelector(".screen.active")?.dataset.screen;
+    state._galleryReturnTo = (cur === "result") ? "result" : "cover";
     renderGallery();
     goto("gallery");
+  });
+
+  document.getElementById("galleryBack").addEventListener("click", () => {
+    if (state._galleryReturnTo === "result") {
+      goto("result");
+    } else {
+      goto("cover");
+    }
   });
   document.getElementById("galleryStart").addEventListener("click", () => {
     restart();
