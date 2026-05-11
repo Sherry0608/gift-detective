@@ -239,6 +239,25 @@ function renderQuiz() {
 
   // 上一题按钮
   document.getElementById("quizBack").disabled = (i === 0);
+
+  // 下一题按钮：只有在已答过当前题、且不是最后一题时显示
+  const nextBtn = document.getElementById("quizNext");
+  const answered = !!state.answers[i];
+  const hasMore = i < QUESTIONS.length - 1;
+  if (answered && hasMore) {
+    nextBtn.hidden = false;
+    nextBtn.disabled = false;
+  } else {
+    nextBtn.hidden = true;
+  }
+
+  // 未答高亮：从 reveal 校验跳回时附加
+  if (state._highlightUnanswered) {
+    optsEl.classList.add("unanswered-highlight");
+    state._highlightUnanswered = false;
+  } else {
+    optsEl.classList.remove("unanswered-highlight");
+  }
 }
 
 // ---------- 评分 & 人格判定 ----------
@@ -868,6 +887,15 @@ function init() {
     }
   });
 
+  document.getElementById("quizNext").addEventListener("click", () => {
+    if (state.quizIdx < QUESTIONS.length - 1) {
+      state.quizIdx++;
+      renderQuiz();
+    } else {
+      goto("open");
+    }
+  });
+
   // 开放题输入
   ["open1","open2","open3","open4"].forEach((id, i) => {
     document.getElementById(id).addEventListener("input", e => {
@@ -876,9 +904,16 @@ function init() {
   });
 
   document.getElementById("revealBtn").addEventListener("click", () => {
-    // 校验
-    if (state.answers.filter(a => a).length < 12) {
-      showToast("还有问题没答完哦");
+    // 校验：找到第一题未答的题号
+    const firstUnanswered = state.answers.findIndex((a, i) => i < QUESTIONS.length && !a);
+    const missingCount = state.answers.slice(0, QUESTIONS.length).filter(a => !a).length
+      + (QUESTIONS.length - state.answers.length > 0 ? QUESTIONS.length - state.answers.length : 0);
+    if (firstUnanswered !== -1 || state.answers.length < QUESTIONS.length) {
+      const idx = firstUnanswered !== -1 ? firstUnanswered : state.answers.length;
+      const remain = QUESTIONS.length - state.answers.filter(Boolean).length;
+      showToast(`还差 ${remain} 题未答 · 跳到第 ${idx + 1} 题`);
+      state.quizIdx = idx;
+      state._highlightUnanswered = true;
       goto("quiz");
       renderQuiz();
       return;

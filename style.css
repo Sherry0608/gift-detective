@@ -563,6 +563,21 @@ textarea, input { font-family: inherit; }
   transform: scale(1.6);
 }
 
+/* 未答高亮：从 reveal 跳回时提示 */
+.quiz-options.unanswered-highlight {
+  position: relative;
+  animation: unansweredPulse 1.8s ease-out;
+}
+.quiz-options.unanswered-highlight .quiz-opt {
+  border-color: var(--berry);
+  box-shadow: 0 0 0 2px rgba(213, 75, 113, .15);
+}
+@keyframes unansweredPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(213, 75, 113, .35); }
+  60%  { box-shadow: 0 0 0 14px rgba(213, 75, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(213, 75, 113, 0); }
+}
+
 /* ============ Step 4 开放题 ============ */
 .open-form { display: flex; flex-direction: column; gap: 14px; }
 .open-field {
