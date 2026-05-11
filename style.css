@@ -733,6 +733,11 @@ textarea, input { font-family: inherit; }
   background: var(--cream);
   border-left: 3px solid var(--ink-mute);
 }
+.gifts-subhead-entity {
+  background: linear-gradient(90deg, #ECE7FB 0%, #F5F1FF 100%);
+  border-left: 3px solid #6A4FD0;
+}
+.gifts-subhead-entity .sub-text b { color: #4A33A0; }
 
 /* 卡片内 badge */
 .gift-badge-row { margin: 2px 0 6px; }
@@ -753,6 +758,11 @@ textarea, input { font-family: inherit; }
   color: var(--ink-mute);
   border: 1px solid var(--line);
 }
+.gift-badge-entity {
+  background: #ECE7FB;
+  color: #4A33A0;
+  border: 1px solid #C9BCF1;
+}
 
 /* 精准推荐卡片轻量级高亮 */
 .gift-card-precise {
@@ -766,6 +776,34 @@ textarea, input { font-family: inherit; }
   background: var(--berry-deep);
   border-radius: 2px;
   opacity: 0.45;
+}
+
+/* 专有名词直达卡：紫色 accent，更醒目 */
+.gift-card-entity {
+  position: relative;
+  background: linear-gradient(180deg, #FAF8FF 0%, transparent 100%);
+  border-radius: 12px;
+  padding-left: 8px;
+  padding-right: 8px;
+  margin-left: -8px;
+  margin-right: -8px;
+}
+.gift-card-entity::before {
+  content: "";
+  position: absolute;
+  left: -8px; top: 14px; bottom: 14px;
+  width: 3px;
+  background: #6A4FD0;
+  border-radius: 2px;
+  opacity: 0.7;
+}
+.gift-card-entity .gift-emoji {
+  background: #ECE7FB;
+  border-color: #C9BCF1;
+}
+.gift-price-range {
+  background: #ECE7FB !important;
+  color: #4A33A0 !important;
 }
 
 .gift-card {
@@ -877,6 +915,7 @@ textarea, input { font-family: inherit; }
 
 /* 截图模式下隐藏购买按钮 */
 .snapshot-mode .gift-shop-row { display: none; }
+.snapshot-mode .gift-card-entity { background: none; }
 
 /* 预算不足的空态 */
 .gifts-empty {

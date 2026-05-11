@@ -89,6 +89,7 @@ const OPEN_KEYWORDS = [
   { match: ["上班","通勤","出差","职场","工作","升职","商务","白领"], tags: ["通勤","职场","商务"] }
 ];
 
+
 // 把开放题原文匹配出 tag 集合 + 命中的关键词原文
 function extractOpenSignals(openText) {
   const text = (openText || "").toLowerCase();
@@ -267,26 +268,36 @@ function dimStrength(scores) {
 
 // ---------- 礼物推荐引擎 ----------
 // 预算为严格筛选条件：只在 [budget.min, budget.max] 范围内出商品。
-// 返回两组：
-//   personalized：根据开放题精准命中的礼物（最多 4 件）
-//   personaPicks：按人格+关系补足 6 件
+// 返回三组：
+//   entityCards：识别出的专有名词（鬼灭/lululemon 等）生成的动态直达卡（最多 2 件）
+//   personalized：根据开放题 tag 命中的礼物库礼物
+//   personaPicks：按人格+关系补足
+// 总共控制在 6 件
 function recommendGifts() {
   const persona = state.persona;
   const budget = BUDGETS.find(b => b.id === state.budget);
   const relation = state.relation;
   const openText = Object.values(state.open).join(" ").toLowerCase();
   const TARGET_TOTAL = 6;
-  const PERSONALIZED_CAP = 4;
+  const ENTITY_CAP = 2;
+  const PRECISE_CAP = 4;     // 专有名词 + tag 命中 总计
 
   // 严格预算区间过滤
   const inBudget = g => g.price >= budget.min && g.price <= budget.max;
   const inBudgetGifts = GIFTS.filter(inBudget);
 
-  // ====== Part A：开放题精准推荐 ======
+  // ====== Part 0：专有名词动态卡 ======
+  const entities = (typeof extractEntities === "function")
+    ? extractEntities(openText, ENTITY_CAP) : [];
+  const entityCards = entities.map(e => makeEntityCard(e, "¥" + budget.label));
+
+  // ====== Part A：开放题 tag 精准推荐 ======
   const { hitTags, hitWords } = extractOpenSignals(openText);
 
   const personalized = [];
   const usedNames = new Set();
+  // 动态卡名也指入 usedNames，避免重复名字
+  entityCards.forEach(ec => usedNames.add(ec.name));
 
   if (hitTags.size > 0) {
     // 为预算内的每件礼物计算开放题命中分
@@ -307,8 +318,10 @@ function recommendGifts() {
     }).filter(x => x.hits > 0)
       .sort((a, b) => b.score - a.score);
 
+    // 精准位置 = PRECISE_CAP - 已经出现的动态卡数量
+    const tagSlots = Math.max(0, PRECISE_CAP - entityCards.length);
     for (const x of scored) {
-      if (personalized.length >= PERSONALIZED_CAP) break;
+      if (personalized.length >= tagSlots) break;
       if (!usedNames.has(x.g.name)) {
         personalized.push(x.g);
         usedNames.add(x.g.name);
@@ -353,14 +366,14 @@ function recommendGifts() {
 
   const personaPicks = [];
   for (const h of personaPool) {
-    if (personalized.length + personaPicks.length >= TARGET_TOTAL) break;
+    if (entityCards.length + personalized.length + personaPicks.length >= TARGET_TOTAL) break;
     if (!usedNames.has(h.g.name)) {
       personaPicks.push(h.g);
       usedNames.add(h.g.name);
     }
   }
 
-  return { personalized, personaPicks, hitWords: Array.from(hitWords) };
+  return { entityCards, personalized, personaPicks, hitWords: Array.from(hitWords) };
 }
 
 // 找到开放题里命中的关键词，结果页高亮用
@@ -458,8 +471,8 @@ function renderResult() {
   state.scores = scores;
   state.persona = code;
   const persona = PERSONAS[code];
-  const { personalized, personaPicks } = recommendGifts();
-  const totalCount = personalized.length + personaPicks.length;
+  const { entityCards, personalized, personaPicks } = recommendGifts();
+  const totalCount = entityCards.length + personalized.length + personaPicks.length;
   const hitKw = findHitKeywords();
   const strength = dimStrength(scores);
 
@@ -490,19 +503,33 @@ function renderResult() {
 
   // 礼物卡片生成器
   function buildGiftCard(g, idx, kind) {
-    const q = encodeURIComponent(g.searchQuery || g.name);
-    const tbUrl = `https://s.taobao.com/search?q=${q}`;
-    const jdUrl = `https://search.jd.com/Search?keyword=${q}&enc=utf-8`;
-    const badge = kind === "personalized"
-      ? `<span class="gift-badge gift-badge-precise">📌 根据你的描述</span>`
-      : `<span class="gift-badge gift-badge-persona">🎯 人格推荐</span>`;
+    // 动态卡（entity）走自己的 tb/jd 搜索词；普通卡用 searchQuery 或 name
+    const tbQ = encodeURIComponent(g.tbQuery || g.searchQuery || g.name);
+    const jdQ = encodeURIComponent(g.jdQuery || g.searchQuery || g.name);
+    const tbUrl = `https://s.taobao.com/search?q=${tbQ}`;
+    const jdUrl = `https://search.jd.com/Search?keyword=${jdQ}&enc=utf-8`;
+    let badge;
+    if (kind === "entity") {
+      const tagLabel = g.canonical || g.name;
+      badge = `<span class="gift-badge gift-badge-entity">📍 TA 提起的 · ${tagLabel}</span>`;
+    } else if (kind === "personalized") {
+      badge = `<span class="gift-badge gift-badge-precise">📌 根据你的描述</span>`;
+    } else {
+      badge = `<span class="gift-badge gift-badge-persona">🎯 人格推荐</span>`;
+    }
+    const cardClass = kind === "entity" ? "gift-card-entity"
+      : (kind === "personalized" ? "gift-card-precise" : "");
+    // 价格：动态卡显示预算区间（已经是 "¥xxx" 字符串），普通卡显示数字+参考
+    const priceHtml = g.isDynamic
+      ? `<div class="gift-price gift-price-range">${g.price}</div>`
+      : `<div class="gift-price">¥${g.price}<span class="gift-price-note">参考</span></div>`;
     return `
-      <div class="gift-card ${kind === "personalized" ? "gift-card-precise" : ""}">
+      <div class="gift-card ${cardClass}">
         <div class="gift-emoji">${g.emoji}</div>
         <div class="gift-body">
           <div class="gift-top">
             <div class="gift-name">${idx+1}. ${g.name}</div>
-            <div class="gift-price">¥${g.price}<span class="gift-price-note">参考</span></div>
+            ${priceHtml}
           </div>
           <div class="gift-badge-row">${badge}</div>
           <div class="gift-reason">${g.reason}</div>
@@ -519,13 +546,17 @@ function renderResult() {
     `;
   }
 
+  let entityHtml = "";
+  entityCards.forEach((g, i) => {
+    entityHtml += buildGiftCard(g, i, "entity");
+  });
   let personalizedHtml = "";
   personalized.forEach((g, i) => {
-    personalizedHtml += buildGiftCard(g, i, "personalized");
+    personalizedHtml += buildGiftCard(g, entityCards.length + i, "personalized");
   });
   let personaHtml = "";
   personaPicks.forEach((g, i) => {
-    personaHtml += buildGiftCard(g, personalized.length + i, "persona");
+    personaHtml += buildGiftCard(g, entityCards.length + personalized.length + i, "persona");
   });
 
   document.getElementById("resultRoot").innerHTML = `
@@ -561,17 +592,24 @@ function renderResult() {
           <div class="empty-sub">可以试试选择相邻的预算区间，或阅读「人格图鉴」中 ${persona.name} 的送礼思路。</div>
         </div>
       ` : `
+        ${entityCards.length > 0 ? `
+          <div class="gifts-subhead gifts-subhead-entity">
+            <span class="sub-icon">📍</span>
+            <span class="sub-text"><b>TA 提起的具体内容</b> · 直达搜索</span>
+          </div>
+          ${entityHtml}
+        ` : ""}
         ${personalized.length > 0 ? `
           <div class="gifts-subhead gifts-subhead-precise">
             <span class="sub-icon">📌</span>
-            <span class="sub-text"><b>根据你的描述精选</b> · 命中 TA 提起的兴趣</span>
+            <span class="sub-text"><b>${entityCards.length > 0 ? "按兴趣补充" : "根据你的描述精选"}</b> · 命中 TA 提起的兴趣</span>
           </div>
           ${personalizedHtml}
         ` : ""}
         ${personaPicks.length > 0 ? `
           <div class="gifts-subhead gifts-subhead-persona">
             <span class="sub-icon">🎯</span>
-            <span class="sub-text"><b>${personalized.length > 0 ? "按人格补充" : "按人格匹配"}</b> · 「${persona.name}」会喜欢的</span>
+            <span class="sub-text"><b>${(entityCards.length + personalized.length) > 0 ? "按人格补充" : "按人格匹配"}</b> · 「${persona.name}」会喜欢的</span>
           </div>
           ${personaHtml}
         ` : ""}
