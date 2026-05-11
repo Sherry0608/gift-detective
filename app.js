@@ -2,9 +2,9 @@
 // 礼物侦探事务所 · 交互层
 // ============================================================
 
-const SCREENS = ["cover", "relation", "budget", "quiz", "open", "result"];
+const SCREENS = ["cover", "relation", "budget", "quiz", "open", "result", "gallery"];
 const STEP_OF_SCREEN = {       // 进度条对应步骤（0 = 不显示）
-  cover: 0, relation: 1, budget: 2, quiz: 3, open: 4, result: 4
+  cover: 0, relation: 1, budget: 2, quiz: 3, open: 4, result: 4, gallery: 0
 };
 
 const state = {
@@ -39,8 +39,15 @@ function goto(screen) {
     txt.textContent = `第 ${step} 步 / 共 4 步`;
   }
 
-  // 重新调查按钮
-  document.getElementById("restartBtn").hidden = (screen === "cover");
+  // 重新调查按钮与图鉴入口
+  document.getElementById("restartBtn").hidden = (screen === "cover" || screen === "gallery");
+  document.getElementById("gallery-entry").hidden = (screen === "gallery");
+
+  // 回流横幅只在封面展示
+  const banner = document.getElementById("referBanner");
+  if (banner && !banner.dataset.hidden) {
+    banner.hidden = (screen !== "cover");
+  }
 }
 
 // ---------- 渲染 Step 1 关系 ----------
@@ -404,8 +411,19 @@ function renderResult() {
         <div class="gifts-meta">${gifts.length} 件 · 按匹配度排序</div>
       </div>
       ${giftsHtml}
+      <button class="more-types-btn" id="moreTypesBtn">
+        看看其他 15 型礼物人格 →
+      </button>
     </div>
   `;
+  // 绑定跳转
+  setTimeout(() => {
+    const mb = document.getElementById("moreTypesBtn");
+    if (mb) mb.addEventListener("click", () => {
+      renderGallery();
+      goto("gallery");
+    });
+  }, 0);
 
   goto("result");
 }
@@ -449,34 +467,49 @@ async function saveAsImage() {
 
 // ---------- 分享：微信 ----------
 function shareToWechat() {
-  // 优先调用原生 share（移动端浏览器支持）
+  const link = buildShareUrl();
+  const p = PERSONAS[state.persona];
   const shareData = {
-    title: `我朋友是「${PERSONAS[state.persona].name}」型送礼对象`,
-    text: `${PERSONAS[state.persona].tagline} — 来看看 TA 适合什么礼物，也测测你身边的人。`,
-    url: window.location.href
+    title: `我朋友是「${p.name}」型送礼对象`,
+    text: `${p.tagline} — 来看看 TA 适合什么礼物，也测测你身边的人。`,
+    url: link
   };
   if (navigator.share) {
     navigator.share(shareData).catch(() => {});
     return;
   }
-  // 否则弹出微信引导
+  // 否则弹出微信引导，同时复制链接到剪贴板
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).catch(() => {});
+  }
   document.getElementById("wechatModal").hidden = false;
 }
 
-// ---------- 分享：复制链接 ----------
+// ---------- 分享链接（带 ?from=）----------
+function buildShareUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("from", state.persona || "");
+  // 去除 hash
+  url.hash = "";
+  return url.toString();
+}
+
 function copyLink() {
-  const link = window.location.href;
+  const link = buildShareUrl();
   if (navigator.clipboard) {
     navigator.clipboard.writeText(link).then(() => {
       showToast("链接已复制，去粘贴给 TA 吧");
-    });
+    }).catch(() => fallbackCopy(link));
   } else {
-    const t = document.createElement("textarea");
-    t.value = link; document.body.appendChild(t); t.select();
-    document.execCommand("copy");
-    document.body.removeChild(t);
-    showToast("链接已复制");
+    fallbackCopy(link);
   }
+}
+function fallbackCopy(link) {
+  const t = document.createElement("textarea");
+  t.value = link; document.body.appendChild(t); t.select();
+  try { document.execCommand("copy"); } catch (e) {}
+  document.body.removeChild(t);
+  showToast("链接已复制");
 }
 
 // ---------- Toast ----------
@@ -503,10 +536,128 @@ function restart() {
   goto("cover");
 }
 
+// ---------- 回流横幅：读取 ?from= ----------
+function renderReferBanner() {
+  const params = new URLSearchParams(window.location.search);
+  const fromCode = (params.get("from") || "").toUpperCase();
+  const persona = PERSONAS[fromCode];
+  if (!persona) return;
+  document.getElementById("referEmoji").textContent = persona.emoji;
+  document.getElementById("referLine1").innerHTML =
+    `你的朋友是「<b style="color:var(--berry-deep)">${persona.name}</b>」型送礼对象`;
+  document.getElementById("referLine2").textContent =
+    `${persona.tagline} · 来测一测你又是哪一型。`;
+  const banner = document.getElementById("referBanner");
+  banner.hidden = false;
+  document.getElementById("referClose").addEventListener("click", () => {
+    banner.hidden = true;
+    banner.dataset.hidden = "1";
+  });
+}
+
+// ---------- 16 型图鉴 ----------
+const PERSONA_TONES = {
+  EMLS:"p", EMLW:"o", EMRS:"y", EMRW:"g",
+  EALS:"p", EALW:"o", EARS:"y", EARW:"g",
+  IMLS:"p", IMLW:"o", IMRS:"y", IMRW:"g",
+  IALS:"p", IALW:"o", IARS:"y", IARW:"g"
+};
+
+function renderGallery() {
+  const grid = document.getElementById("galleryGrid");
+  if (grid.dataset.rendered === "1") return;
+  grid.innerHTML = "";
+  Object.keys(PERSONAS).forEach(code => {
+    const p = PERSONAS[code];
+    const card = document.createElement("button");
+    card.className = "gallery-card";
+    card.dataset.tone = PERSONA_TONES[code] || "p";
+    card.innerHTML = `
+      <div class="g-emoji">${p.emoji}</div>
+      <div class="g-code">${code}</div>
+      <div class="g-name">${p.name}</div>
+      <div class="g-tag">${p.tagline}</div>
+    `;
+    card.addEventListener("click", () => openPersonaDrawer(code));
+    grid.appendChild(card);
+  });
+  grid.dataset.rendered = "1";
+}
+
+function dimReadable(code) {
+  return [
+    { letter: code[0], pair: code[0] === "E" ? "外放 Extro" : "内敛 Intro" },
+    { letter: code[1], pair: code[1] === "M" ? "极简 Minimal" : "美学 Aesthetic" },
+    { letter: code[2], pair: code[2] === "L" ? "感性 Lovey" : "理性 Rational" },
+    { letter: code[3], pair: code[3] === "S" ? "稳定 Steady" : "新鲜 Wild" }
+  ];
+}
+
+function giftsForPersona(code, limit = 4) {
+  const matched = GIFTS.filter(g => g.personas.includes(code));
+  // 按价格适度排一下，优先中位段
+  matched.sort((a, b) => Math.abs(a.price - 500) - Math.abs(b.price - 500));
+  return matched.slice(0, limit);
+}
+
+function openPersonaDrawer(code) {
+  const p = PERSONAS[code];
+  if (!p) return;
+  const dims = dimReadable(code);
+  const gifts = giftsForPersona(code, 4);
+  const giftsHtml = gifts.map(g => `
+    <div class="dp-gift">
+      <div class="dp-gift-emoji">${g.emoji}</div>
+      <div class="dp-gift-name">${g.name}</div>
+      <div class="dp-gift-price">¥${g.price}</div>
+    </div>
+  `).join("");
+
+  document.getElementById("drawerBody").innerHTML = `
+    <div class="dp-head">
+      <div class="dp-emoji">${p.emoji}</div>
+      <div class="dp-code">${code}</div>
+      <div class="dp-name">${p.name}</div>
+      <div class="dp-en">${p.en.toUpperCase()}</div>
+      <p class="dp-tag">${p.tagline}</p>
+    </div>
+    <div class="dp-section">
+      <div class="dp-label">🔍 人物画像</div>
+      <div class="dp-text">${p.desc}</div>
+    </div>
+    <div class="dp-section">
+      <div class="dp-label">🧭 四维度坐标</div>
+      <div class="dp-dims">
+        ${dims.map(d => `<div class="dp-dim"><b>${d.letter}</b> · ${d.pair}</div>`).join("")}
+      </div>
+    </div>
+    <div class="dp-section">
+      <div class="dp-label">🎁 送礼参考</div>
+      <div class="dp-gifts">${giftsHtml || '<div class="dp-text">暴雨收集中…</div>'}</div>
+    </div>
+    <div class="dp-action">
+      <button class="primary-btn" id="drawerStart">为「${p.name}」型的人测一次 →</button>
+    </div>
+  `;
+  document.getElementById("personaDrawer").hidden = false;
+  document.body.style.overflow = "hidden";
+  document.getElementById("drawerStart").addEventListener("click", () => {
+    closeDrawer();
+    restart();
+    goto("relation");
+  });
+}
+
+function closeDrawer() {
+  document.getElementById("personaDrawer").hidden = true;
+  document.body.style.overflow = "";
+}
+
 // ---------- 初始化 ----------
 function init() {
   renderRelations();
   renderBudgets();
+  renderReferBanner();
   goto("cover");
 
   document.getElementById("startBtn").addEventListener("click", () => goto("relation"));
@@ -543,6 +694,21 @@ function init() {
   document.getElementById("retryBtn").addEventListener("click", restart);
   document.getElementById("closeWechatModal").addEventListener("click", () => {
     document.getElementById("wechatModal").hidden = true;
+  });
+
+  // 图鉴入口
+  document.getElementById("gallery-entry").addEventListener("click", () => {
+    renderGallery();
+    goto("gallery");
+  });
+  document.getElementById("galleryStart").addEventListener("click", () => {
+    restart();
+    goto("relation");
+  });
+  document.getElementById("drawerClose").addEventListener("click", closeDrawer);
+  document.getElementById("drawerMask").addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && !document.getElementById("personaDrawer").hidden) closeDrawer();
   });
 }
 

@@ -24,8 +24,23 @@
       </svg>
       <span class="brand-name">礼物侦探事务所</span>
     </div>
-    <button class="link-btn" id="restartBtn" hidden>重新调查</button>
+    <div class="top-actions">
+      <button class="link-btn" id="gallery-entry">🗂️ 16 型图鉴</button>
+      <button class="link-btn" id="restartBtn" hidden>重新调查</button>
+    </div>
   </header>
+
+  <!-- ============ 回流横幅 ============ -->
+  <div class="refer-banner" id="referBanner" hidden>
+    <div class="refer-card">
+      <div class="refer-emoji" id="referEmoji">🎁</div>
+      <div class="refer-body">
+        <div class="refer-line1" id="referLine1">你的朋友是「派对小太阳」型</div>
+        <div class="refer-line2" id="referLine2">来测一测，看看你又是哪一型送礼对象。</div>
+      </div>
+      <button class="refer-close" id="referClose" aria-label="关闭">×</button>
+    </div>
+  </div>
 
   <!-- ============ 进度条 ============ -->
   <div class="progress-wrap" id="progressWrap">
@@ -36,7 +51,7 @@
   <main class="main">
 
     <!-- ============ 封面 ============ -->
-    <section class="screen active" data-screen="cover">
+    <section class="screen active" data-screen="cover" id="screenCover">
       <div class="cover">
         <div class="cover-badge">CASE #2026</div>
         <h1 class="cover-title">
@@ -133,6 +148,19 @@
       </div>
     </section>
 
+    <!-- ============ 16型图鉴 ============ -->
+    <section class="screen" data-screen="gallery">
+      <div class="gallery-head">
+        <span class="step-num">GALLERY</span>
+        <h2>16 型礼物人格图鉴</h2>
+        <p class="step-hint">每个人身边都至少有 3 种。点击查看 TA 的送礼指南。</p>
+      </div>
+      <div class="gallery-grid" id="galleryGrid"></div>
+      <div class="gallery-foot">
+        <button class="primary-btn" id="galleryStart">为某个人测一次 →</button>
+      </div>
+    </section>
+
     <!-- ============ 结果页 ============ -->
     <section class="screen" data-screen="result">
       <div id="resultRoot" class="result-root">
@@ -150,6 +178,15 @@
     </section>
 
   </main>
+
+  <!-- ============ 图鉴详情抽屉 ============ -->
+  <div class="drawer" id="personaDrawer" hidden>
+    <div class="drawer-mask" id="drawerMask"></div>
+    <div class="drawer-panel" id="drawerPanel">
+      <button class="drawer-close" id="drawerClose" aria-label="关闭">×</button>
+      <div id="drawerBody"></div>
+    </div>
+  </div>
 
   <!-- ============ 微信分享提示弹层 ============ -->
   <div class="modal" id="wechatModal" hidden>
