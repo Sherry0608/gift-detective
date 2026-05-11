@@ -282,8 +282,9 @@ function recommendGifts() {
   const ENTITY_CAP = 2;
   const PRECISE_CAP = 4;     // 专有名词 + tag 命中 总计
 
-  // 严格预算区间过滤
-  const inBudget = g => g.price >= budget.min && g.price <= budget.max;
+  // 预算区间过滤：礼物采样区间 [priceMin, priceMax] 与预算带 [budget.min, budget.max] 有重叠即入选
+  // （礼物价格本身是淘宝主流价区间不是单点，重叠判定比单点判定更贴近真实场景）
+  const inBudget = g => g.priceMin <= budget.max && g.priceMax >= budget.min;
   const inBudgetGifts = GIFTS.filter(inBudget);
 
   // ====== Part 0：专有名词动态卡 ======
@@ -519,10 +520,10 @@ function renderResult() {
     }
     const cardClass = kind === "entity" ? "gift-card-entity"
       : (kind === "personalized" ? "gift-card-precise" : "");
-    // 价格：动态卡显示预算区间（已经是 "¥xxx" 字符串），普通卡显示数字+参考
+    // 价格：动态卡走预算带字符串；普通卡走礼物采样区间 priceLabel
     const priceHtml = g.isDynamic
       ? `<div class="gift-price gift-price-range">${g.price}</div>`
-      : `<div class="gift-price">¥${g.price}<span class="gift-price-note">参考</span></div>`;
+      : `<div class="gift-price gift-price-label">${g.priceLabel}<span class="gift-price-note">参考</span></div>`;
     return `
       <div class="gift-card ${cardClass}">
         <div class="gift-emoji">${g.emoji}</div>
@@ -792,7 +793,7 @@ function openPersonaDrawer(code) {
     <div class="dp-gift">
       <div class="dp-gift-emoji">${g.emoji}</div>
       <div class="dp-gift-name">${g.name}</div>
-      <div class="dp-gift-price">¥${g.price}</div>
+      <div class="dp-gift-price">${g.priceLabel || ('¥' + (g.priceTypical || ''))}</div>
     </div>
   `).join("");
 

@@ -805,6 +805,11 @@ textarea, input { font-family: inherit; }
   background: #ECE7FB !important;
   color: #4A33A0 !important;
 }
+/* 普通礼物区间价格（保留 berry 色系，比原来稍紧凑）*/
+.gift-price-label {
+  font-size: 12px;
+  letter-spacing: 0.1px;
+}
 
 .gift-card {
   display: flex; align-items: flex-start; gap: 14px;
