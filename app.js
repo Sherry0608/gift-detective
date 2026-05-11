@@ -171,6 +171,8 @@ function dimStrength(scores) {
 }
 
 // ---------- 礼物推荐引擎 ----------
+// 预算为严格筛选条件：只在 [budget.min, budget.max] 范围内出商品。
+// 同人格+同关系优先；只要凑足几件算几件，不为了凑数量破坏预算。
 function recommendGifts() {
   const persona = state.persona;
   const budget = BUDGETS.find(b => b.id === state.budget);
@@ -178,37 +180,33 @@ function recommendGifts() {
   const openText = Object.values(state.open).join(" ").toLowerCase();
   const TARGET = 6;
 
-  // 1) 基础池：人格 + 关系（最强匹配）
-  const tier1 = GIFTS.filter(g =>
-    g.personas.includes(persona) && g.relations.includes(relation)
-  );
-  // 2) 同人格但关系不匹配（次强）
-  const tier2 = GIFTS.filter(g =>
-    g.personas.includes(persona) && !g.relations.includes(relation)
-  );
-  // 3) 关系匹配但人格不匹配（兜底）
-  const tier3 = GIFTS.filter(g =>
-    !g.personas.includes(persona) && g.relations.includes(relation)
-  );
+  // 严格预算区间过滤
+  const inBudget = g => g.price >= budget.min && g.price <= budget.max;
 
-  // 给每个礼物打分
-  const minB = budget.min * 0.85;
-  const maxB = budget.max * 1.15;
-  const mid = budget.max === 99999
-    ? Math.max(budget.min, 1500)
-    : (budget.min + budget.max) / 2;
+  // 1) 人格 + 关系（最强）
+  const tier1 = GIFTS.filter(g =>
+    inBudget(g) && g.personas.includes(persona) && g.relations.includes(relation)
+  );
+  // 2) 同人格，关系不匹配
+  const tier2 = GIFTS.filter(g =>
+    inBudget(g) && g.personas.includes(persona) && !g.relations.includes(relation)
+  );
+  // 3) 关系匹配，人格不匹配
+  const tier3 = GIFTS.filter(g =>
+    inBudget(g) && !g.personas.includes(persona) && g.relations.includes(relation)
+  );
+  // 4) 其他范围内礼物（仅为预算较窄时提供额外后备）
+  const tier4 = GIFTS.filter(g =>
+    inBudget(g) && !g.personas.includes(persona) && !g.relations.includes(relation)
+  );
 
   function scoreGift(g, tier) {
     let s = 0;
     if (tier === 1) s += 10;
-    else if (tier === 2) s += 4;
-    else s += 1;
-    // 预算契合
-    if (g.price >= minB && g.price <= maxB) s += 5;
-    else if (g.price <= maxB * 1.5) s += 1;
-    // 价格距离中位
-    s += Math.max(0, 3 - Math.abs(g.price - mid) / 400);
-    // 关键词
+    else if (tier === 2) s += 5;
+    else if (tier === 3) s += 2;
+    else s += 0.5;
+    // 关键词加分
     g.tags.forEach(t => {
       if (openText.includes(t.toLowerCase())) s += 2.5;
     });
@@ -218,7 +216,8 @@ function recommendGifts() {
   const all = [
     ...tier1.map(g => ({ g, tier: 1, score: scoreGift(g, 1) })),
     ...tier2.map(g => ({ g, tier: 2, score: scoreGift(g, 2) })),
-    ...tier3.map(g => ({ g, tier: 3, score: scoreGift(g, 3) }))
+    ...tier3.map(g => ({ g, tier: 3, score: scoreGift(g, 3) })),
+    ...tier4.map(g => ({ g, tier: 4, score: scoreGift(g, 4) }))
   ];
   all.sort((a, b) => b.score - a.score);
 
@@ -402,9 +401,15 @@ function renderResult() {
     <div class="gifts-section">
       <div class="gifts-head">
         <div class="gifts-title">🎁 TA 的精选推荐</div>
-        <div class="gifts-meta">${gifts.length} 件 · 按匹配度排序</div>
+        <div class="gifts-meta">¥${budget.label} · 严格区间 · ${gifts.length} 件</div>
       </div>
-      ${giftsHtml}
+      ${gifts.length === 0 ? `
+        <div class="gifts-empty">
+          <div class="empty-emoji">🔍</div>
+          <div class="empty-title">这个预算带里侦探暂时没找到合适的礼物</div>
+          <div class="empty-sub">可以试试选择相邻的预算区间，或阅读「人格图鉴」中 ${persona.name} 的送礼思路。</div>
+        </div>
+      ` : giftsHtml}
       <button class="more-types-btn" id="moreTypesBtn">
         看看其他 15 型礼物人格 →
       </button>
