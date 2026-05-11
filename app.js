@@ -363,15 +363,26 @@ function renderResult() {
   // 礼物卡片
   let giftsHtml = "";
   gifts.forEach((g, idx) => {
+    const q = encodeURIComponent(g.searchQuery || g.name);
+    const tbUrl = `https://s.taobao.com/search?q=${q}`;
+    const jdUrl = `https://search.jd.com/Search?keyword=${q}&enc=utf-8`;
     giftsHtml += `
       <div class="gift-card">
         <div class="gift-emoji">${g.emoji}</div>
         <div class="gift-body">
           <div class="gift-top">
             <div class="gift-name">${idx+1}. ${g.name}</div>
-            <div class="gift-price">¥${g.price}</div>
+            <div class="gift-price">¥${g.price}<span class="gift-price-note">参考</span></div>
           </div>
           <div class="gift-reason">${g.reason}</div>
+          <div class="gift-shop-row">
+            <a class="shop-btn tb" href="${tbUrl}" target="_blank" rel="noopener noreferrer">
+              <span class="shop-mark">淘</span> 淘宝搜
+            </a>
+            <a class="shop-btn jd" href="${jdUrl}" target="_blank" rel="noopener noreferrer">
+              <span class="shop-mark jd-mark">JD</span> 京东搜
+            </a>
+          </div>
         </div>
       </div>
     `;
