@@ -42,12 +42,6 @@ function goto(screen) {
   // 重新调查按钮与图鉴入口
   document.getElementById("restartBtn").hidden = (screen === "cover" || screen === "gallery");
   document.getElementById("gallery-entry").hidden = (screen === "gallery");
-
-  // 回流横幅只在封面展示
-  const banner = document.getElementById("referBanner");
-  if (banner && !banner.dataset.hidden) {
-    banner.hidden = (screen !== "cover");
-  }
 }
 
 // ---------- 渲染 Step 1 关系 ----------
@@ -470,8 +464,8 @@ function shareToWechat() {
   const link = buildShareUrl();
   const p = PERSONAS[state.persona];
   const shareData = {
-    title: `我朋友是「${p.name}」型送礼对象`,
-    text: `${p.tagline} — 来看看 TA 适合什么礼物，也测测你身边的人。`,
+    title: `礼物侦探事务所 · ${p.name}`,
+    text: `给「${p.name}」型的人选礼物 — 来这里查一份清单。`,
     url: link
   };
   if (navigator.share) {
@@ -485,11 +479,10 @@ function shareToWechat() {
   document.getElementById("wechatModal").hidden = false;
 }
 
-// ---------- 分享链接（带 ?from=）----------
+// ---------- 分享链接 ----------
 function buildShareUrl() {
   const url = new URL(window.location.href);
-  url.searchParams.set("from", state.persona || "");
-  // 去除 hash
+  url.searchParams.delete("from");
   url.hash = "";
   return url.toString();
 }
@@ -534,25 +527,6 @@ function restart() {
   document.querySelectorAll(".opt-card, .budget-card").forEach(c => c.classList.remove("selected"));
   document.querySelectorAll(".open-field textarea").forEach(t => t.value = "");
   goto("cover");
-}
-
-// ---------- 回流横幅：读取 ?from= ----------
-function renderReferBanner() {
-  const params = new URLSearchParams(window.location.search);
-  const fromCode = (params.get("from") || "").toUpperCase();
-  const persona = PERSONAS[fromCode];
-  if (!persona) return;
-  document.getElementById("referEmoji").textContent = persona.emoji;
-  document.getElementById("referLine1").innerHTML =
-    `你的朋友是「<b style="color:var(--berry-deep)">${persona.name}</b>」型送礼对象`;
-  document.getElementById("referLine2").textContent =
-    `${persona.tagline} · 来测一测你又是哪一型。`;
-  const banner = document.getElementById("referBanner");
-  banner.hidden = false;
-  document.getElementById("referClose").addEventListener("click", () => {
-    banner.hidden = true;
-    banner.dataset.hidden = "1";
-  });
 }
 
 // ---------- 16 型图鉴 ----------
@@ -657,7 +631,6 @@ function closeDrawer() {
 function init() {
   renderRelations();
   renderBudgets();
-  renderReferBanner();
   goto("cover");
 
   document.getElementById("startBtn").addEventListener("click", () => goto("relation"));

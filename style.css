@@ -90,46 +90,6 @@ textarea, input { font-family: inherit; }
 }
 .link-btn:hover { color: var(--berry); background: var(--berry-soft); }
 
-/* ============ 回流横幅 ============ */
-.refer-banner {
-  margin: 4px 0 14px;
-  animation: fadeIn .45s var(--ease);
-}
-.refer-banner[hidden] { display: none; }
-.refer-card {
-  display: flex; align-items: center; gap: 12px;
-  background: linear-gradient(135deg, #FFE2EA 0%, #F5E7C9 100%);
-  border: 1.5px solid rgba(216,69,108,.25);
-  border-radius: var(--r-md);
-  padding: 12px 14px;
-  position: relative;
-  box-shadow: var(--shadow-1);
-}
-.refer-emoji {
-  font-size: 30px; line-height: 1;
-  flex-shrink: 0;
-}
-.refer-body { flex: 1; min-width: 0; }
-.refer-line1 {
-  font-family: var(--font-serif);
-  font-weight: 700; font-size: 15px;
-  color: var(--ink);
-  line-height: 1.35;
-}
-.refer-line2 {
-  font-size: 12.5px; color: var(--ink-soft);
-  margin-top: 2px;
-  line-height: 1.4;
-}
-.refer-close {
-  position: absolute; top: 6px; right: 8px;
-  width: 24px; height: 24px;
-  color: var(--ink-mute); font-size: 20px;
-  line-height: 1;
-  border-radius: 50%;
-}
-.refer-close:hover { background: rgba(31,26,23,.06); color: var(--ink); }
-
 /* ============ 16 型图鉴 ============ */
 .gallery-head { padding: 8px 4px 16px; }
 .gallery-head h2 {
