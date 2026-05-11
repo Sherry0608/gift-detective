@@ -712,6 +712,62 @@ textarea, input { font-family: inherit; }
 }
 .gifts-meta { font-size: 11.5px; color: var(--ink-mute); }
 
+/* 分组子标题 */
+.gifts-subhead {
+  display: flex; align-items: center; gap: 8px;
+  margin: 16px 0 4px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.gifts-subhead:first-of-type { margin-top: 4px; }
+.gifts-subhead .sub-icon { font-size: 15px; flex-shrink: 0; }
+.gifts-subhead .sub-text { color: var(--ink); }
+.gifts-subhead .sub-text b { color: var(--ink); }
+.gifts-subhead-precise {
+  background: linear-gradient(90deg, #FFF1E8 0%, #FFF7F0 100%);
+  border-left: 3px solid var(--berry-deep);
+}
+.gifts-subhead-persona {
+  background: var(--cream);
+  border-left: 3px solid var(--ink-mute);
+}
+
+/* 卡片内 badge */
+.gift-badge-row { margin: 2px 0 6px; }
+.gift-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.2px;
+}
+.gift-badge-precise {
+  background: var(--berry-soft);
+  color: var(--berry-deep);
+}
+.gift-badge-persona {
+  background: var(--cream);
+  color: var(--ink-mute);
+  border: 1px solid var(--line);
+}
+
+/* 精准推荐卡片轻量级高亮 */
+.gift-card-precise {
+  position: relative;
+}
+.gift-card-precise::before {
+  content: "";
+  position: absolute;
+  left: -8px; top: 14px; bottom: 14px;
+  width: 3px;
+  background: var(--berry-deep);
+  border-radius: 2px;
+  opacity: 0.45;
+}
+
 .gift-card {
   display: flex; align-items: flex-start; gap: 14px;
   padding: 14px 0;

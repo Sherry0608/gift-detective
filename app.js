@@ -18,6 +18,101 @@ const state = {
   scores: null
 };
 
+// ---------- 开放题关键词词典 ----------
+// 把用户可能输入的中文同义词、口语化表达映射到 GIFTS 里的 tag 关键词。
+// 命中即视为「TA 在乎这个」，会优先推荐相关礼物。
+// 词典以「输入关键词」为 key，值是 GIFTS tags 里出现的标签（用于打分 + 召回）。
+const OPEN_KEYWORDS = [
+  // 咖啡相关
+  { match: ["咖啡","手冲","拿铁","美式","espresso","星巴克","瑞幸","挂耳","咖啡豆"], tags: ["咖啡","手冲"] },
+  // 茶相关
+  { match: ["茶","普洱","龙井","乌龙","茶叶","喝茶","茶具","紫砂"], tags: ["茶","紫砂","传统"] },
+  // 数码 / 电脑 / 键盘 / 鼠标
+  { match: ["键盘","机械键盘","客制化","轴体","打字"], tags: ["键盘","机械","数码","写代码"] },
+  { match: ["耳机","降噪","airpods","无线耳机","头戴","听歌"], tags: ["耳机","音乐","降噪"] },
+  { match: ["音箱","音响","喇叭","bgm"], tags: ["音乐","派对"] },
+  { match: ["充电","快充","充电器","充电站","电池"], tags: ["充电","数码","效率"] },
+  { match: ["数码","电子产品","科技","小家电","黑科技"], tags: ["数码","科技","小家电"] },
+  // 游戏
+  { match: ["游戏","打游戏","steam","主机","switch","ps5","xbox","网游","原神","王者"], tags: ["游戏","steam","宅"] },
+  { match: ["二次元","动漫","手办","周边","acg","宅","漫画"], tags: ["手办","周边","二次元","宅"] },
+  { match: ["盲盒","潮玩","泡泡玛特","labubu","molly"], tags: ["盲盒","潮玩","收藏"] },
+  // 摄影 / 相机
+  { match: ["摄影","拍照","相机","胶片","拍立得","vlog","记录"], tags: ["相机","摄影","复古","记录"] },
+  // 阅读 / 书
+  { match: ["书","读书","看书","小说","阅读","书店","kindle","杂志","诗集"], tags: ["书","阅读","书店","杂志","文艺"] },
+  // 音乐
+  { match: ["音乐","听歌","乐队","演唱会","livehouse","黑胶","唱片"], tags: ["音乐","黑胶","复古"] },
+  // 香水 / 香氛 / 蜡烛
+  { match: ["香水","香氛","留香","沙龙香"], tags: ["香水","香氛","气味"] },
+  { match: ["香薰","蜡烛","扩香","精油"], tags: ["香薰","蜡烛","氛围","治愈"] },
+  // 助眠 / 焦虑 / 加班
+  { match: ["失眠","睡不着","睡眠","助眠","熬夜","晚睡","倒班"], tags: ["助眠","睡眠","眼罩"] },
+  { match: ["加班","累","劳累","压力大","焦虑","emo","难受","emotion"], tags: ["助眠","治愈","焦虑","劳累","加班"] },
+  { match: ["减肥","健身","瑜伽","跑步","运动"], tags: ["运动","户外"] },
+  // 居家 / 收纳 / 极简
+  { match: ["居家","在家","宅家","家里","摆件","装饰","布置"], tags: ["居家","摆件","氛围"] },
+  { match: ["收纳","整理","桌面","工位","办公桌","整洁"], tags: ["收纳","桌面","极简","效率"] },
+  { match: ["极简","简约","性冷淡","muji","无印"], tags: ["极简","基础款"] },
+  // 穿搭 / 包 / 首饰
+  { match: ["穿搭","穿衣","时尚","潮","潮牌"], tags: ["穿搭","潮流","设计"] },
+  { match: ["包","包包","帆布包","托特","挎包","双肩包"], tags: ["包","穿搭"] },
+  { match: ["首饰","项链","戒指","耳环","手链","银饰","金饰"], tags: ["首饰","项链","定制"] },
+  { match: ["围巾","披肩","保暖","冬天","冷"], tags: ["围巾","保暖","冬天"] },
+  // 文具 / 手账
+  { match: ["文具","笔","钢笔","圆珠笔","签字","练字"], tags: ["书写","笔","签字"] },
+  { match: ["手账","日记","本子","笔记本","打卡","手写"], tags: ["笔记本","书写","记录","交换日记","手写"] },
+  // 植物 / 园艺
+  { match: ["植物","花","鲜花","养花","多肉","绿植","盆栽","园艺"], tags: ["植物","园艺","鲜花"] },
+  // 美食 / 做饭
+  { match: ["做饭","下厨","烹饪","美食","吃货","零食","餐具"], tags: ["美食","做饭","陶瓷","餐具"] },
+  // 体验 / 旅行
+  { match: ["旅行","出去玩","度假","出游","探店","体验","陶艺","调香","课程","学一个","学一下"], tags: ["体验","旅行","新奇","课程","尝试"] },
+  { match: ["露营","户外","徒步","爬山","野餐","骑行"], tags: ["户外","露营"] },
+  // 神秘 / 塔罗 / 星座 / 天文
+  { match: ["塔罗","星座","占卜","水晶","神秘","玄学"], tags: ["塔罗","神秘","占卜","小众"] },
+  { match: ["天文","星空","望远镜","宇宙","星星"], tags: ["天文","星空","夜晚"] },
+  // 传统 / 长辈
+  { match: ["长辈","爸","妈","爷","奶","父母","传统","国风","汉服","中式"], tags: ["送长辈","传统","古典"] },
+  // 派对 / 庆祝 / 酒
+  { match: ["派对","聚会","庆祝","开party","开趴","生日"], tags: ["聚会","派对","庆祝"] },
+  { match: ["酒","红酒","葡萄酒","威士忌","鸡尾酒","香槟","气泡酒","小酌"], tags: ["酒","庆祝","气泡水"] },
+  // 桌游 / 解谜
+  { match: ["桌游","剧本杀","狼人杀","密室","解谜"], tags: ["桌游","派对"] },
+  // 治愈系 / 软软的
+  { match: ["猫","撸猫","狗","撸狗","宠物","可爱","治愈","软软的","毛绒","抱枕"], tags: ["治愈","可爱","毛绒","软软的"] },
+  // 看展 / 美术馆 / 艺术
+  { match: ["看展","展览","美术馆","博物馆","画展","艺术","画","油画","插画"], tags: ["艺术","挂画","明信片","文艺"] },
+  // 纪念日 / 仪式感
+  { match: ["纪念日","周年","领证","结婚","恋爱","求婚"], tags: ["纪念日","定制","仪式感","刻字"] },
+  // 工作 / 通勤 / 职场
+  { match: ["上班","通勤","出差","职场","工作","升职","商务","白领"], tags: ["通勤","职场","商务"] }
+];
+
+// 把开放题原文匹配出 tag 集合 + 命中的关键词原文
+function extractOpenSignals(openText) {
+  const text = (openText || "").toLowerCase();
+  const hitTags = new Set();
+  const hitWords = new Set();
+  if (!text.trim()) return { hitTags, hitWords };
+  for (const rule of OPEN_KEYWORDS) {
+    for (const w of rule.match) {
+      if (text.includes(w.toLowerCase())) {
+        hitWords.add(w);
+        rule.tags.forEach(t => hitTags.add(t));
+      }
+    }
+  }
+  // 同时把礼物自带 tag 也直接命中（兼容旧词）
+  GIFTS.forEach(g => g.tags.forEach(t => {
+    if (text.includes(t.toLowerCase())) {
+      hitTags.add(t);
+      hitWords.add(t);
+    }
+  }));
+  return { hitTags, hitWords };
+}
+
 // ---------- 工具：屏切换 ----------
 function goto(screen) {
   state.screen = screen;
@@ -172,32 +267,71 @@ function dimStrength(scores) {
 
 // ---------- 礼物推荐引擎 ----------
 // 预算为严格筛选条件：只在 [budget.min, budget.max] 范围内出商品。
-// 同人格+同关系优先；只要凑足几件算几件，不为了凑数量破坏预算。
+// 返回两组：
+//   personalized：根据开放题精准命中的礼物（最多 4 件）
+//   personaPicks：按人格+关系补足 6 件
 function recommendGifts() {
   const persona = state.persona;
   const budget = BUDGETS.find(b => b.id === state.budget);
   const relation = state.relation;
   const openText = Object.values(state.open).join(" ").toLowerCase();
-  const TARGET = 6;
+  const TARGET_TOTAL = 6;
+  const PERSONALIZED_CAP = 4;
 
   // 严格预算区间过滤
   const inBudget = g => g.price >= budget.min && g.price <= budget.max;
+  const inBudgetGifts = GIFTS.filter(inBudget);
 
+  // ====== Part A：开放题精准推荐 ======
+  const { hitTags, hitWords } = extractOpenSignals(openText);
+
+  const personalized = [];
+  const usedNames = new Set();
+
+  if (hitTags.size > 0) {
+    // 为预算内的每件礼物计算开放题命中分
+    const scored = inBudgetGifts.map(g => {
+      let hits = 0;
+      g.tags.forEach(t => { if (hitTags.has(t)) hits++; });
+      // 额外：礼物名 / searchQuery 被开放题原文提起，极强信号
+      const nameHit = openText && (
+        openText.includes((g.name || "").toLowerCase()) ||
+        (g.searchQuery && g.searchQuery.toLowerCase().split(/\s+/).some(w => w && openText.includes(w)))
+      );
+      let score = hits * 3;
+      if (nameHit) score += 2;
+      // 同人格+关系加一点点，用于同分时排序
+      if (g.personas.includes(persona)) score += 0.6;
+      if (g.relations.includes(relation)) score += 0.4;
+      return { g, score, hits };
+    }).filter(x => x.hits > 0)
+      .sort((a, b) => b.score - a.score);
+
+    for (const x of scored) {
+      if (personalized.length >= PERSONALIZED_CAP) break;
+      if (!usedNames.has(x.g.name)) {
+        personalized.push(x.g);
+        usedNames.add(x.g.name);
+      }
+    }
+  }
+
+  // ====== Part B：人格补足 ======
   // 1) 人格 + 关系（最强）
-  const tier1 = GIFTS.filter(g =>
-    inBudget(g) && g.personas.includes(persona) && g.relations.includes(relation)
+  const tier1 = inBudgetGifts.filter(g =>
+    g.personas.includes(persona) && g.relations.includes(relation)
   );
   // 2) 同人格，关系不匹配
-  const tier2 = GIFTS.filter(g =>
-    inBudget(g) && g.personas.includes(persona) && !g.relations.includes(relation)
+  const tier2 = inBudgetGifts.filter(g =>
+    g.personas.includes(persona) && !g.relations.includes(relation)
   );
   // 3) 关系匹配，人格不匹配
-  const tier3 = GIFTS.filter(g =>
-    inBudget(g) && !g.personas.includes(persona) && g.relations.includes(relation)
+  const tier3 = inBudgetGifts.filter(g =>
+    !g.personas.includes(persona) && g.relations.includes(relation)
   );
-  // 4) 其他范围内礼物（仅为预算较窄时提供额外后备）
-  const tier4 = GIFTS.filter(g =>
-    inBudget(g) && !g.personas.includes(persona) && !g.relations.includes(relation)
+  // 4) 其他范围内礼物
+  const tier4 = inBudgetGifts.filter(g =>
+    !g.personas.includes(persona) && !g.relations.includes(relation)
   );
 
   function scoreGift(g, tier) {
@@ -206,42 +340,35 @@ function recommendGifts() {
     else if (tier === 2) s += 5;
     else if (tier === 3) s += 2;
     else s += 0.5;
-    // 关键词加分
-    g.tags.forEach(t => {
-      if (openText.includes(t.toLowerCase())) s += 2.5;
-    });
     return s;
   }
 
-  const all = [
+  const personaPool = [
     ...tier1.map(g => ({ g, tier: 1, score: scoreGift(g, 1) })),
     ...tier2.map(g => ({ g, tier: 2, score: scoreGift(g, 2) })),
     ...tier3.map(g => ({ g, tier: 3, score: scoreGift(g, 3) })),
     ...tier4.map(g => ({ g, tier: 4, score: scoreGift(g, 4) }))
   ];
-  all.sort((a, b) => b.score - a.score);
+  personaPool.sort((a, b) => b.score - a.score);
 
-  const picked = [];
-  const seen = new Set();
-  for (const h of all) {
-    if (!seen.has(h.g.name)) {
-      picked.push(h.g);
-      seen.add(h.g.name);
-      if (picked.length >= TARGET) break;
+  const personaPicks = [];
+  for (const h of personaPool) {
+    if (personalized.length + personaPicks.length >= TARGET_TOTAL) break;
+    if (!usedNames.has(h.g.name)) {
+      personaPicks.push(h.g);
+      usedNames.add(h.g.name);
     }
   }
-  return picked;
+
+  return { personalized, personaPicks, hitWords: Array.from(hitWords) };
 }
 
 // 找到开放题里命中的关键词，结果页高亮用
 function findHitKeywords() {
   const openText = Object.values(state.open).join(" ").toLowerCase();
   if (!openText.trim()) return [];
-  const all = new Set();
-  GIFTS.forEach(g => g.tags.forEach(t => {
-    if (openText.includes(t.toLowerCase())) all.add(t);
-  }));
-  return Array.from(all).slice(0, 8);
+  const { hitWords } = extractOpenSignals(openText);
+  return Array.from(hitWords).slice(0, 8);
 }
 
 // ---------- 雷达图 ----------
@@ -331,7 +458,8 @@ function renderResult() {
   state.scores = scores;
   state.persona = code;
   const persona = PERSONAS[code];
-  const gifts = recommendGifts();
+  const { personalized, personaPicks } = recommendGifts();
+  const totalCount = personalized.length + personaPicks.length;
   const hitKw = findHitKeywords();
   const strength = dimStrength(scores);
 
@@ -360,20 +488,23 @@ function renderResult() {
     detective += `<br/><span style="color:var(--ink-mute);font-size:13px;">备注：TA 身上也有一点 ${weakHints.join("、")} 的影子。</span>`;
   }
 
-  // 礼物卡片
-  let giftsHtml = "";
-  gifts.forEach((g, idx) => {
+  // 礼物卡片生成器
+  function buildGiftCard(g, idx, kind) {
     const q = encodeURIComponent(g.searchQuery || g.name);
     const tbUrl = `https://s.taobao.com/search?q=${q}`;
     const jdUrl = `https://search.jd.com/Search?keyword=${q}&enc=utf-8`;
-    giftsHtml += `
-      <div class="gift-card">
+    const badge = kind === "personalized"
+      ? `<span class="gift-badge gift-badge-precise">📌 根据你的描述</span>`
+      : `<span class="gift-badge gift-badge-persona">🎯 人格推荐</span>`;
+    return `
+      <div class="gift-card ${kind === "personalized" ? "gift-card-precise" : ""}">
         <div class="gift-emoji">${g.emoji}</div>
         <div class="gift-body">
           <div class="gift-top">
             <div class="gift-name">${idx+1}. ${g.name}</div>
             <div class="gift-price">¥${g.price}<span class="gift-price-note">参考</span></div>
           </div>
+          <div class="gift-badge-row">${badge}</div>
           <div class="gift-reason">${g.reason}</div>
           <div class="gift-shop-row">
             <a class="shop-btn tb" href="${tbUrl}" target="_blank" rel="noopener noreferrer">
@@ -386,6 +517,15 @@ function renderResult() {
         </div>
       </div>
     `;
+  }
+
+  let personalizedHtml = "";
+  personalized.forEach((g, i) => {
+    personalizedHtml += buildGiftCard(g, i, "personalized");
+  });
+  let personaHtml = "";
+  personaPicks.forEach((g, i) => {
+    personaHtml += buildGiftCard(g, personalized.length + i, "persona");
   });
 
   document.getElementById("resultRoot").innerHTML = `
@@ -412,15 +552,30 @@ function renderResult() {
     <div class="gifts-section">
       <div class="gifts-head">
         <div class="gifts-title">🎁 TA 的精选推荐</div>
-        <div class="gifts-meta">¥${budget.label} · 严格区间 · ${gifts.length} 件</div>
+        <div class="gifts-meta">¥${budget.label} · 严格区间 · ${totalCount} 件</div>
       </div>
-      ${gifts.length === 0 ? `
+      ${totalCount === 0 ? `
         <div class="gifts-empty">
           <div class="empty-emoji">🔍</div>
           <div class="empty-title">这个预算带里侦探暂时没找到合适的礼物</div>
           <div class="empty-sub">可以试试选择相邻的预算区间，或阅读「人格图鉴」中 ${persona.name} 的送礼思路。</div>
         </div>
-      ` : giftsHtml}
+      ` : `
+        ${personalized.length > 0 ? `
+          <div class="gifts-subhead gifts-subhead-precise">
+            <span class="sub-icon">📌</span>
+            <span class="sub-text"><b>根据你的描述精选</b> · 命中 TA 提起的兴趣</span>
+          </div>
+          ${personalizedHtml}
+        ` : ""}
+        ${personaPicks.length > 0 ? `
+          <div class="gifts-subhead gifts-subhead-persona">
+            <span class="sub-icon">🎯</span>
+            <span class="sub-text"><b>${personalized.length > 0 ? "按人格补充" : "按人格匹配"}</b> · 「${persona.name}」会喜欢的</span>
+          </div>
+          ${personaHtml}
+        ` : ""}
+      `}
       <button class="more-types-btn" id="moreTypesBtn">
         看看其他 15 型礼物人格 →
       </button>
