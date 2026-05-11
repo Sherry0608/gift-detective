@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>礼物侦探事务所 · 找到 TA 真正想要的东西</title>
+<meta name="description" content="像玩心理测试一样，4 步锁定 TA 的礼物人格，得到一份专属推荐清单。" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 顶部品牌栏 ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 40 40" aria-label="礼物侦探">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M12 22 L18 28 L29 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="14" cy="14" r="1.6" fill="currentColor"/>
+        <circle cx="26" cy="26" r="1.6" fill="currentColor"/>
+      </svg>
+      <span class="brand-name">礼物侦探事务所</span>
+    </div>
+    <button class="link-btn" id="restartBtn" hidden>重新调查</button>
+  </header>
+
+  <!-- ============ 进度条 ============ -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">第 1 步 / 共 4 步</div>
+  </div>
+
+  <main class="main">
+
+    <!-- ============ 封面 ============ -->
+    <section class="screen active" data-screen="cover">
+      <div class="cover">
+        <div class="cover-badge">CASE #2026</div>
+        <h1 class="cover-title">
+          <span>送礼之前，</span><br/>
+          <span class="accent">先做一次侦探</span>
+        </h1>
+        <p class="cover-sub">4 步、12 道题，锁定 TA 的礼物人格。<br/>从 16 种类型里，找到 TA 真正想要的那一份。</p>
+
+        <div class="cover-mock">
+          <div class="mock-card">
+            <div class="mock-emoji">🥂</div>
+            <div class="mock-name">派对小太阳</div>
+            <div class="mock-tag">朋友圈照片最多</div>
+          </div>
+          <div class="mock-card alt">
+            <div class="mock-emoji">📖</div>
+            <div class="mock-name">隐秘文青</div>
+            <div class="mock-tag">日记本永远写不完</div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-emoji">⌨️</div>
+            <div class="mock-name">深宅极客</div>
+            <div class="mock-tag">一个人能精通一个领域</div>
+          </div>
+        </div>
+
+        <button class="primary-btn big" id="startBtn">开始调查 →</button>
+        <p class="cover-foot">全程匿名 · 不储存任何信息</p>
+      </div>
+    </section>
+
+    <!-- ============ Step 1 关系 ============ -->
+    <section class="screen" data-screen="relation">
+      <div class="step-head">
+        <span class="step-num">Step 01</span>
+        <h2>TA 是你的什么人？</h2>
+        <p class="step-hint">关系决定送礼的"尺度"。</p>
+      </div>
+      <div class="grid grid-relation" id="relationGrid"></div>
+    </section>
+
+    <!-- ============ Step 2 预算 ============ -->
+    <section class="screen" data-screen="budget">
+      <div class="step-head">
+        <span class="step-num">Step 02</span>
+        <h2>这次想花多少？</h2>
+        <p class="step-hint">不会判断你大方不大方，只用来挑价位带。</p>
+      </div>
+      <div class="grid grid-budget" id="budgetGrid"></div>
+    </section>
+
+    <!-- ============ Step 3 性格 12 题 ============ -->
+    <section class="screen" data-screen="quiz">
+      <div class="step-head">
+        <span class="step-num">Step 03</span>
+        <h2>关于 TA 的 12 个小问题</h2>
+        <p class="step-hint" id="quizSubHint">第 1 / 12 题</p>
+      </div>
+      <div class="quiz-card" id="quizCard">
+        <div class="quiz-q" id="quizQ"></div>
+        <div class="quiz-options" id="quizOptions"></div>
+        <div class="quiz-nav">
+          <button class="ghost-btn" id="quizBack">← 上一题</button>
+          <div class="quiz-dots" id="quizDots"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Step 4 开放题 ============ -->
+    <section class="screen" data-screen="open">
+      <div class="step-head">
+        <span class="step-num">Step 04</span>
+        <h2>多说一点 TA 的近况</h2>
+        <p class="step-hint">这些是侦探破案的关键线索（都可以跳过）。</p>
+      </div>
+      <div class="open-form">
+        <label class="open-field">
+          <span class="open-label">📌 TA 最近经常提起、喜欢的东西？</span>
+          <textarea id="open1" rows="2" placeholder="例：最近沉迷做手冲咖啡 / 在追某部剧 / 在学油画…"></textarea>
+        </label>
+        <label class="open-field">
+          <span class="open-label">🛒 TA 念叨过想买、但没下单的东西？</span>
+          <textarea id="open2" rows="2" placeholder="例：想要一个机械键盘 / 一直想换个新包…"></textarea>
+        </label>
+        <label class="open-field">
+          <span class="open-label">😶 TA 最近开心和烦恼的事？</span>
+          <textarea id="open3" rows="2" placeholder="例：刚升职但加班多 / 失眠 / 减肥成功…"></textarea>
+        </label>
+        <label class="open-field">
+          <span class="open-label">🎯 TA 平时的爱好是？</span>
+          <textarea id="open4" rows="2" placeholder="例：摄影、撸猫、打游戏、看展、徒步…"></textarea>
+        </label>
+        <button class="primary-btn big" id="revealBtn">揭晓 TA 的礼物人格 →</button>
+      </div>
+    </section>
+
+    <!-- ============ 结果页 ============ -->
+    <section class="screen" data-screen="result">
+      <div id="resultRoot" class="result-root">
+        <!-- 由 JS 渲染 -->
+      </div>
+
+      <div class="share-bar">
+        <button class="share-btn primary" id="saveImgBtn">📸 保存为图片</button>
+        <button class="share-btn" id="wechatBtn">💬 分享到微信</button>
+        <button class="share-btn" id="copyLinkBtn">🔗 复制链接</button>
+        <button class="share-btn ghost" id="retryBtn">🔁 再测一次</button>
+      </div>
+
+      <p class="result-foot">— 礼物侦探事务所 · 把对的礼物，送到对的人手上 —</p>
+    </section>
+
+  </main>
+
+  <!-- ============ 微信分享提示弹层 ============ -->
+  <div class="modal" id="wechatModal" hidden>
+    <div class="modal-card">
+      <div class="modal-emoji">💬</div>
+      <h3>把这份报告发给 TA</h3>
+      <p>请点击右上角 ··· ，选择"发送给朋友"或"分享到朋友圈"。<br/>也可以先保存为图片再发出去。</p>
+      <button class="primary-btn" id="closeWechatModal">好</button>
+    </div>
+  </div>
+
+  <!-- ============ Toast ============ -->
+  <div class="toast" id="toast" hidden></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="./data.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
