@@ -192,6 +192,12 @@ function renderBudgets() {
       grid.querySelectorAll(".budget-card").forEach(c => c.classList.remove("selected"));
       btn.classList.add("selected");
       setTimeout(() => {
+        // 来自图鉴：已锁定人格，跳过 quiz/open 直接出结果
+        if (state._presetPersona) {
+          goto("result");
+          renderResult();
+          return;
+        }
         state.quizIdx = 0;
         state.answers = [];
         goto("quiz");
@@ -279,6 +285,16 @@ function pickCode(scores) {
   const c = scores.L >= scores.R ? "L" : "R";
   const d = scores.S >= scores.W ? "S" : "W";
   return a + b + c + d;
+}
+
+// 从人格代码反推出满格得分（从图鉴锁定人格时使用）
+function presetScoresFor(code) {
+  const scores = { E:0, I:0, M:0, A:0, L:0, R:0, S:0, W:0 };
+  scores[code[0]] = 3;
+  scores[code[1]] = 3;
+  scores[code[2]] = 3;
+  scores[code[3]] = 3;
+  return scores;
 }
 
 // 置信度：3:0 强 / 2:1 弱
@@ -492,8 +508,15 @@ function renderDimChips(scores, code) {
 
 // ---------- 渲染结果 ----------
 function renderResult() {
-  const scores = computeScores();
-  const code = pickCode(scores);
+  let code, scores;
+  if (state._presetPersona) {
+    // 来自图鉴：直接使用锁定的人格，不走问卷
+    code = state._presetPersona;
+    scores = presetScoresFor(code);
+  } else {
+    scores = computeScores();
+    code = pickCode(scores);
+  }
   state.scores = scores;
   state.persona = code;
   const persona = PERSONAS[code];
@@ -807,6 +830,7 @@ function restart() {
   state.open = { o1: "", o2: "", o3: "", o4: "" };
   state.persona = null;
   state.scores = null;
+  state._presetPersona = null;
   document.querySelectorAll(".opt-card, .budget-card").forEach(c => c.classList.remove("selected"));
   document.querySelectorAll(".open-field textarea").forEach(t => t.value = "");
   goto("cover");
@@ -901,6 +925,8 @@ function openPersonaDrawer(code) {
   document.getElementById("drawerStart").addEventListener("click", () => {
     closeDrawer();
     restart();
+    // 锁定该人格，跳过 quiz 与 open，只走 关系 → 预算 → 结果
+    state._presetPersona = code;
     goto("relation");
   });
 }
