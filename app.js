@@ -552,15 +552,15 @@ function renderResult() {
 
   // 礼物卡片生成器
   function buildGiftCard(g, idx, kind) {
-    // 动态卡（entity）走自己的 tb/jd 搜索词；普通卡用 searchQuery 或 name
+    // 动态卡（entity）走自己的 tb 搜索词；普通卡用 searchQuery 或 name
     const tbQ = encodeURIComponent(g.tbQuery || g.searchQuery || g.name);
-    const jdQ = encodeURIComponent(g.jdQuery || g.searchQuery || g.name);
     const tbUrl = `https://s.taobao.com/search?q=${tbQ}`;
-    const jdUrl = `https://search.jd.com/Search?keyword=${jdQ}&enc=utf-8`;
+    // 小红书搜索（适合看真实用后感、送礼示范、拍照参考）
+    const xhsQ = encodeURIComponent(g.searchQuery || g.name);
+    const xhsUrl = `https://www.xiaohongshu.com/search_result?keyword=${xhsQ}`;
     // 线下渠道礼物：用大众点评 + 小红书搜索
     const offlineQ = encodeURIComponent(g.searchQuery || g.name);
     const dpUrl = `https://www.dianping.com/search/keyword/0/0_${offlineQ}`;
-    const xhsUrl = `https://www.xiaohongshu.com/search_result?keyword=${offlineQ}`;
     const isOffline = g.channel === 'offline';
     let badge;
     if (kind === "entity") {
@@ -599,8 +599,8 @@ function renderResult() {
             <a class="shop-btn tb" href="${tbUrl}" target="_blank" rel="noopener noreferrer">
               <span class="shop-mark">淘</span> 淘宝搜
             </a>
-            <a class="shop-btn jd" href="${jdUrl}" target="_blank" rel="noopener noreferrer">
-              <span class="shop-mark jd-mark">JD</span> 京东搜
+            <a class="shop-btn xhs" href="${xhsUrl}" target="_blank" rel="noopener noreferrer">
+              <span class="shop-mark xhs-mark">书</span> 小红书搜
             </a>
             `}
           </div>
