@@ -450,39 +450,118 @@ function handleBlindReveal() {
   renderBlindResult();
 }
 
+// 返回结构化信号:按字段组织,让打分能区分"命中哪个字段"
 function blindSignalTags() {
-  const positive = new Set();
   const negative = new Set();
   let strictAllow = null;
   const b = state.blind;
-  function addTags(field, id) {
+  const byField = {}; // { job: Set<tag>, ... }
+  const allPositive = new Set();
+
+  function addField(field, id) {
     if (!id) return;
     const def = BLIND_FIELDS[field];
     if (!def) return;
     const o = def.find(x => x.id === id);
     if (!o) return;
-    (o.tags || []).forEach(t => positive.add(t));
+    const tags = o.tags || [];
+    if (tags.length) {
+      byField[field] = new Set(tags);
+      tags.forEach(t => allPositive.add(t));
+    }
     (o.blockTags || []).forEach(t => negative.add(t));
-    if (o.strict && o.tags && o.tags.length) {
-      strictAllow = new Set([...(strictAllow || []), ...o.tags]);
+    if (o.strict && tags.length) {
+      strictAllow = new Set([...(strictAllow || []), ...tags]);
     }
   }
-  addTags("gender", b.gender);
-  addTags("age", b.age);
-  addTags("job", b.job);
-  addTags("occasion", b.occasion);
-  addTags("vibe", b.vibe);
-  addTags("closeness", b.closeness);
-  return { positive, negative, strictAllow };
+  ["gender","age","job","occasion","vibe","closeness"].forEach(f => addField(f, b[f]));
+  return { byField, positive: allPositive, negative, strictAllow };
 }
 
-// 盲盒卡片的中性理由:基于命中的 tag + 场合/vibe 自动拼一句话,不假设认识 TA
-function blindReasonFor(g, positive, occLabel, vibeLabel) {
-  const hits = (g.tags || []).filter(t => positive && positive.has(t));
-  const top = hits.slice(0, 3);
-  const tagPart = top.length ? `贴 ${top.join(" / ")}` : "颜值与实用都在线";
-  const ctx = [occLabel, vibeLabel].filter(Boolean).join(" · ");
-  return ctx ? `${tagPart},适合 ${ctx}` : `${tagPart}`;
+// 理由文案库:按命中的主导 tag 选不同表达,避免千篇一律
+// 写法目标:像朋友推荐礼物时随口一句的语气,不写"贴 X / Y, 适合 Z"这种生硬拼接
+const BLIND_REASON_LIB = {
+  // 职业/职场向
+  "职场":     ["上班拿出来不太张扬,但显得你认真挑过", "放在工位上不出戏,送出去也不踩雷", "懂行的人一眼能看出选过料"],
+  "商务":     ["送顺手不会跳脸,也不会让人不好收下", "体面这件事它拿捏得刚好", "不张扬但能看出你上了心"],
+  "通勤":     ["每天出门都用得上,越用越顺手", "上班路上多带一件也不嫌烦", "陪过 TA 几十个早晨之后就变成日常的一部分"],
+  "效率":     ["能悄悄把 TA 的桌面收拾干净", "帮 TA 把那堆乱七八糟的东西理一理", "用过的人都说'怎么不早买'"],
+  "数码":     ["不是张牙舞爪那种科技货,小小一件但很加分", "桌面上多它一件不算多,少它一件又缺点什么", "能用很久的那种小装备"],
+  "键盘":     ["手感讲究过,但不是圈内卷到飞起的那种", "打字是 TA 每天的主业,手感舒服点不亏"],
+  "耳机":     ["戴上就能从人群里抽身一会儿", "出门、吃饭、加班都用得上"],
+
+  // 设计/文艺向
+  "设计":     ["不贵但看得出推敲过", "拿出门不会显土,也不会扎眼", "设计感住在细节里,不外露"],
+  "设计师":   ["有点小心思,送出手能拉一点观感", "小众但不冷僻,送出去不撞款"],
+  "小众":     ["不会和 TA 朋友圈撞款", "看起来不像随手在购物车顺手拍的", "送出去会被问'这哪儿买的'"],
+  "文艺":     ["不是赶潮流那种货,送了比一束花耐看", "静下来的时候才明白选得好"],
+  "手账":     ["一看就是'愿意静下来记点什么'的选择", "写字这件事装备跟上了,才能坚持得下来"],
+  "文具":     ["不贵不张扬,但是 TA 每天会摸到的东西"],
+  "阅读":     ["送一本书太冒险,送一份'让 TA 自己挑'刚好"],
+
+  // 生活/治愈向
+  "治愈":     ["不求多重要,只是'提醒 TA 有你'", "一件能让 TA 抱着发呆的东西", "下班回到家看见它,会会心一笑"],
+  "实用":     ["不打嘴炮多贴心,能用上才是真爱", "脸上不炫,生活里管用", "TA 自己可能不会买,但别人送会很高兴"],
+  "养生":     ["可能 30 岁后开始真香", "体面、有温度、又不跳脸"],
+  "健康":     ["送这件总会被说'还是你贴心'", "不炫但记在心里"],
+  "茶":       ["送谁都不容易出错,是那种省事的选择", "可以摆在那里压压气场,要拿出手又能拿出手"],
+  "传统":     ["不会太跳,送长辈送问候都不出错"],
+
+  // 户外/运动向
+  "户外":     ["能塞进背包里出门一起走", "TA 下次出门就能用上", "独行、露营、出差都不耽误"],
+  "运动":     ["让'决心动起来'这件事变得容易一点", "出过汗之后会多一点成就感"],
+  "露营":     ["户外资深的人会拿出来顺嘴说几句的那种"],
+
+  // 潮玩/气氛向
+  "潮玩":     ["拆盒那一下能拍个视频发朋友圈", "夏天拿出来装、冬天拿出来玩都行"],
+  "盲盒":     ["拆的过程就是礼物本礼,拆出什么都不会输"],
+  "二次元":   ["TA 嘴上不会承认,但会偷偷拿给朋友看"],
+  "可爱":     ["一看就让人'哇'一声,送了不吃亏"],
+  "潮流":     ["不是热搜爆款那种,但能跟上 TA 朋友圈的更新速度"],
+  "聚会":     ["被拉着玩到深夜的那种素材"],
+  "派对":     ["热闹场合拿出来不冷场"],
+  "桌游":     ["一群人玩到凌晨的那种相遇"],
+
+  // 机械/香氛/服饰
+  "机械":     ["机械控、装备控会送出手一句'你懂我'"],
+  "香水":     ["被记住的那种礼物,不动声色却在鼻子里留下"],
+  "香氛":     ["点上就能把 TA 的小宇宙调静"],
+  "穿搭":     ["看起来不大件,但出现频率会越来越高"],
+  "皮具":     ["质感能撑起来,放久了反而越用越顺"],
+  "丝巾":     ["体面,看起来是存心选过的,不出错"],
+
+  // 仪式感/礼盒/纪念
+  "仪式感":   ["跟'随手凑数那种'拉开距离", "送出去能让'这一天'多一些重量"],
+  "礼盒":     ["拆盒本身就是过程的一部分", "打开后不会被问'这是什么'"],
+  "庆祝":     ["适合拿出来纪念一件之后才慢慢明白的事"],
+  "纪念":     ["现在选它不是因为今天,是因为之后每次拿出来都会被记起"],
+
+  // 默认兜底
+  "_":         ["送出手不太能踩雷的那种", "不张扬但也不寒酸,刚刚好", "属于'不太可能选错'的那一类"]
+};
+
+// 根据命中的主导 tag 选一句文案。同一件礼物在同一轮抽取里文案稳定,不会切换
+function blindReasonFor(g, byField, seedSalt) {
+  // 主导 tag 选择优先级:job > occasion > vibe > age > gender
+  const fieldOrder = ["job", "occasion", "vibe", "age", "gender"];
+  let primary = null;
+  for (const f of fieldOrder) {
+    const set = byField[f];
+    if (!set) continue;
+    const hit = (g.tags || []).find(t => set.has(t) && BLIND_REASON_LIB[t]);
+    if (hit) { primary = hit; break; }
+  }
+  // 还没命中?在礼物所有 tag 里挑一个在文案库里的
+  if (!primary) {
+    const fallback = (g.tags || []).find(t => BLIND_REASON_LIB[t]);
+    if (fallback) primary = fallback;
+  }
+  const pool = (primary && BLIND_REASON_LIB[primary]) || BLIND_REASON_LIB["_"];
+  // 用礼物名 + seedSalt 哈希选句,稳定可重现
+  let h = 0;
+  const key = (g.name || "") + "|" + (primary || "") + "|" + (seedSalt || 0);
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) & 0x7fffffff;
+  return pool[h % pool.length];
 }
 
 function blindRecommend(shuffleSeed) {
@@ -495,7 +574,7 @@ function blindRecommend(shuffleSeed) {
   const hi = budget.max * (1 + tol);
   const typicalOf = g => (typeof g.priceTypical === "number" ? g.priceTypical : (g.priceMin + g.priceMax) / 2);
   const inBudget = g => { const t = typicalOf(g); return t >= lo && t <= hi; };
-  const { positive, negative, strictAllow } = blindSignalTags();
+  const { byField, negative, strictAllow } = blindSignalTags();
 
   let pool = GIFTS.filter(inBudget);
   // 严格过滤(不太熟):只保留 strictAllow 里的 tag
@@ -507,19 +586,48 @@ function blindRecommend(shuffleSeed) {
     pool = pool.filter(g => !g.tags.some(t => negative.has(t)));
   }
 
-  // 打分:命中 positive tag 加分(价格不参与评分,避免每件礼物都变成唯一分数导致随机差)
+  // 评分逻辑:job(职业)是最硬的轴——选了"体力/户外"就不能抽出一堆治愈礼盒
+  // job 命中:+100 (护航分、礼物一定优先);其他字段:occasion +5 / vibe +5 / age +3 / gender +2
+  const W = { job: 100, occasion: 5, vibe: 5, age: 3, gender: 2, closeness: 0 };
+  const hasJob = !!byField.job;
   const scored = pool.map(g => {
-    let score = 0;
-    g.tags.forEach(t => { if (positive.has(t)) score += 3; });
-    return { g, score };
+    let weighted = 0;
+    let jobHit = false;
+    Object.entries(byField).forEach(([field, set]) => {
+      const hit = (g.tags || []).some(t => set.has(t));
+      if (hit) {
+        weighted += (W[field] || 1);
+        if (field === "job") jobHit = true;
+      }
+    });
+    return { g, weighted, jobHit };
   });
 
-  // 按分数排序 同分人设计上可互换
-  scored.sort((a, b) => b.score - a.score);
-  // 高分池(护航) + 中分池随机补足
+  // 排序:加权分高的在前。由于 job=+100,命中 job 的一定走在前面
+  scored.sort((a, b) => b.weighted - a.weighted);
+
+  // 如果选了 job,且命中 job 的礼物 >= 6 件:只从命中池里抽。
+  // 命中池 < 6 件:护航命中的那几件,剩下从次优池随机补足
   const TOP = 6;
-  const POOL_FOR_SHUFFLE = Math.min(scored.length, Math.max(12, TOP * 2));
-  const candidates = scored.slice(0, POOL_FOR_SHUFFLE);
+  let candidates;
+  if (hasJob) {
+    const jobHits = scored.filter(x => x.jobHit);
+    const others = scored.filter(x => !x.jobHit);
+    if (jobHits.length >= TOP * 2) {
+      // 命中池够大:从命中池里随机抽 6
+      candidates = jobHits.slice(0, Math.max(12, TOP * 2));
+    } else if (jobHits.length >= 1) {
+      // 命中池不够:全部命中 + 从次优池抽足 12 件
+      const need = Math.max(12, TOP * 2) - jobHits.length;
+      candidates = jobHits.concat(others.slice(0, need));
+    } else {
+      // 一件都没命中 job(概率低):退回按总分抽
+      candidates = scored.slice(0, Math.max(12, TOP * 2));
+    }
+  } else {
+    const POOL_FOR_SHUFFLE = Math.min(scored.length, Math.max(12, TOP * 2));
+    candidates = scored.slice(0, POOL_FOR_SHUFFLE);
+  }
   const seed = (shuffleSeed || 0) * 1009 + 17;
   const shuffled = seededShuffle(candidates, seed);
   return shuffled.slice(0, TOP).map(x => x.g);
@@ -546,7 +654,7 @@ function renderBlindResult() {
 
   const occLabel = labelOf("occasion", state.blind.occasion);
   const vibeLabel = labelOf("vibe", state.blind.vibe);
-  const { positive } = blindSignalTags();
+  const { byField } = blindSignalTags();
 
   let html = `
     <div class="blind-result-head">
@@ -576,7 +684,7 @@ function renderBlindResult() {
               <div class="gift-name">${escapeHtml(g.name)}</div>
               <div class="gift-price">${escapeHtml(g.priceLabel || "")}</div>
             </div>
-            <div class="gift-reason">${escapeHtml(blindReasonFor(g, positive, occLabel, vibeLabel))}</div>
+            <div class="gift-reason">${escapeHtml(blindReasonFor(g, byField, state._blindShuffle))}</div>
             <div class="gift-shop-row">
               <a class="shop-btn tb" href="${tbUrl}" target="_blank" rel="noopener noreferrer">
                 <span class="shop-mark">淘</span> 淘宝搜
