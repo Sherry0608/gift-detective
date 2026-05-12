@@ -540,9 +540,13 @@ const BLIND_REASON_LIB = {
   "_":         ["送出手不太能踩雷的那种", "不张扬但也不寒酸,刚刚好", "属于'不太可能选错'的那一类"]
 };
 
-// 根据命中的主导 tag 选一句文案。同一件礼物在同一轮抽取里文案稳定,不会切换
-function blindReasonFor(g, byField, seedSalt) {
-  // 主导 tag 选择优先级:job > occasion > vibe > age > gender
+// 盲盒卡片文案:优先用每件礼物自己的 blindBlurb(货品句 + 场景句)
+// 若没有 blindBlurb(向后兼容),才回退到按 tag 选模板
+function blindBlurbFor(g, byField, seedSalt) {
+  if (g.blindBlurb && g.blindBlurb.item && g.blindBlurb.scene) {
+    return { item: g.blindBlurb.item, scene: g.blindBlurb.scene };
+  }
+  // 兜底:按 tag 选一句(无 item / scene 区分)
   const fieldOrder = ["job", "occasion", "vibe", "age", "gender"];
   let primary = null;
   for (const f of fieldOrder) {
@@ -551,17 +555,15 @@ function blindReasonFor(g, byField, seedSalt) {
     const hit = (g.tags || []).find(t => set.has(t) && BLIND_REASON_LIB[t]);
     if (hit) { primary = hit; break; }
   }
-  // 还没命中?在礼物所有 tag 里挑一个在文案库里的
   if (!primary) {
     const fallback = (g.tags || []).find(t => BLIND_REASON_LIB[t]);
     if (fallback) primary = fallback;
   }
   const pool = (primary && BLIND_REASON_LIB[primary]) || BLIND_REASON_LIB["_"];
-  // 用礼物名 + seedSalt 哈希选句,稳定可重现
   let h = 0;
   const key = (g.name || "") + "|" + (primary || "") + "|" + (seedSalt || 0);
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) & 0x7fffffff;
-  return pool[h % pool.length];
+  return { item: pool[h % pool.length], scene: "" };
 }
 
 function blindRecommend(shuffleSeed) {
@@ -684,7 +686,16 @@ function renderBlindResult() {
               <div class="gift-name">${escapeHtml(g.name)}</div>
               <div class="gift-price">${escapeHtml(g.priceLabel || "")}</div>
             </div>
-            <div class="gift-reason">${escapeHtml(blindReasonFor(g, byField, state._blindShuffle))}</div>
+            ${(() => {
+              const b = blindBlurbFor(g, byField, state._blindShuffle);
+              if (b.scene) {
+                return `<div class="gift-blurb">
+                  <div class="gift-blurb-item">${escapeHtml(b.item)}</div>
+                  <div class="gift-blurb-scene">${escapeHtml(b.scene)}</div>
+                </div>`;
+              }
+              return `<div class="gift-reason">${escapeHtml(b.item)}</div>`;
+            })()}
             <div class="gift-shop-row">
               <a class="shop-btn tb" href="${tbUrl}" target="_blank" rel="noopener noreferrer">
                 <span class="shop-mark">淘</span> 淘宝搜
