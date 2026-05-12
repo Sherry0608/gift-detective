@@ -765,7 +765,8 @@ function renderResult(opts) {
     personaHtml += buildGiftCard(g, entityCards.length + personalized.length + i, "persona");
   });
 
-  document.getElementById("resultRoot").innerHTML = `
+  const resultRoot = document.getElementById("resultRoot");
+  resultRoot.innerHTML = `
     <div class="result-hero">
       <div class="case-no">CASE #${dateCode()} · 调查完毕</div>
       <div class="result-emoji">${persona.emoji}</div>
@@ -844,21 +845,18 @@ function renderResult(opts) {
       ${state._historyLabel ? `<span class="save-case-tag">当前档案：${escapeHtml(state._historyLabel)}</span>` : ""}
     </div>
   `;
-  // 绑定跳转
-  setTimeout(() => {
-    const mb = document.getElementById("moreTypesBtn");
-    if (mb) mb.addEventListener("click", () => {
-      state._galleryReturnTo = "result";
-      renderGallery();
-      goto("gallery");
-    });
-    const sb = document.getElementById("saveCaseBtn");
-    if (sb) sb.addEventListener("click", promptSaveCase);
-    // 生成礼物留言按钮
-    document.querySelectorAll(".gift-letter-btn").forEach(btn => {
-      btn.addEventListener("click", () => handleGenerateLetter(btn));
-    });
-  }, 0);
+  // 绑定交互（同步绑定，避免 setTimeout 被 iframe 环境调度抢先）
+  const mb = resultRoot.querySelector("#moreTypesBtn");
+  if (mb) mb.addEventListener("click", () => {
+    state._galleryReturnTo = "result";
+    renderGallery();
+    goto("gallery");
+  });
+  const sb = resultRoot.querySelector("#saveCaseBtn");
+  if (sb) sb.addEventListener("click", promptSaveCase);
+  resultRoot.querySelectorAll(".gift-letter-btn").forEach(btn => {
+    btn.addEventListener("click", () => handleGenerateLetter(btn));
+  });
 
   goto("result");
 }
@@ -1468,17 +1466,58 @@ function generateLetterFromTemplates(giftName, persona, rel, echoes) {
   return { warm, witty, source: "template" };
 }
 
-// 提存按钮点击
+// 提存按钮点击——使用自建 modal（纯静态 / iframe 环境下 window.prompt 会被拦）
 function promptSaveCase() {
-  const defaultLabel = state._historyLabel || "";
-  // 用原生 prompt，简单可靠
-  const input = window.prompt("给这份档案起个名字（如：给小美的生日礼、老妈母亲节）：", defaultLabel);
-  if (input === null) return; // cancel
-  const entry = addHistoryEntry(input);
-  if (entry) {
-    state._historyLabel = entry.label;
-    showToast("✅ 已存入档案「" + entry.label + "」");
+  const modal = document.getElementById("caseNameModal");
+  const input = document.getElementById("caseNameInput");
+  const okBtn = document.getElementById("caseNameOk");
+  const cancelBtn = document.getElementById("caseNameCancel");
+  if (!modal || !input || !okBtn || !cancelBtn) {
+    // 底备方案：如果 modal 元素不在，走原生 prompt
+    const fallback = window.prompt("给这份档案起个名字：", state._historyLabel || "");
+    if (fallback === null) return;
+    const entry = addHistoryEntry(fallback);
+    if (entry) {
+      state._historyLabel = entry.label;
+      showToast("✅ 已存入档案「" + entry.label + "」");
+    }
+    return;
   }
+
+  input.value = state._historyLabel || "";
+  modal.hidden = false;
+  // 下一个 tick 再 focus，让 iOS 键盘能弹出
+  setTimeout(() => { input.focus(); input.select(); }, 60);
+
+  function cleanup() {
+    modal.hidden = true;
+    okBtn.removeEventListener("click", onOk);
+    cancelBtn.removeEventListener("click", onCancel);
+    input.removeEventListener("keydown", onKey);
+    modal.removeEventListener("click", onMaskClick);
+  }
+  function onOk() {
+    const val = input.value.trim();
+    cleanup();
+    const entry = addHistoryEntry(val);
+    if (entry) {
+      state._historyLabel = entry.label;
+      showToast("✅ 已存入档案「" + entry.label + "」");
+      // 重新渲染 result 以显示「当前档案」标签
+      try { renderResult({ keepPersona: true, shuffleSeed: state._shuffleCount || 0 }); } catch(e) {}
+    }
+  }
+  function onCancel() { cleanup(); }
+  function onKey(e) {
+    if (e.key === "Enter") { e.preventDefault(); onOk(); }
+    else if (e.key === "Escape") { onCancel(); }
+  }
+  function onMaskClick(e) { if (e.target === modal) onCancel(); }
+
+  okBtn.addEventListener("click", onOk);
+  cancelBtn.addEventListener("click", onCancel);
+  input.addEventListener("keydown", onKey);
+  modal.addEventListener("click", onMaskClick);
 }
 
 document.addEventListener("DOMContentLoaded", init);

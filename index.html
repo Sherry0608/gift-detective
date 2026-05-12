@@ -208,6 +208,20 @@
     </div>
   </div>
 
+  <!-- ============ 起档案名弹层 ============ -->
+  <div class="modal" id="caseNameModal" hidden>
+    <div class="modal-card">
+      <div class="modal-emoji">📂</div>
+      <h3>给这份档案起个名字</h3>
+      <p style="font-size:13px;color:var(--ink-soft);margin:-4px 0 14px;">方便下次重访时一眼认出来</p>
+      <input type="text" id="caseNameInput" class="case-name-input" maxlength="24" placeholder="如：给小美的生日礼、老妈母亲节"/>
+      <div class="case-name-actions">
+        <button class="ghost-btn" id="caseNameCancel">取消</button>
+        <button class="primary-btn" id="caseNameOk">存入档案</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ Toast ============ -->
   <div class="toast" id="toast" hidden></div>
 
