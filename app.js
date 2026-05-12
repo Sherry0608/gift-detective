@@ -476,10 +476,25 @@ function blindSignalTags() {
   return { positive, negative, strictAllow };
 }
 
+// 盲盒卡片的中性理由:基于命中的 tag + 场合/vibe 自动拼一句话,不假设认识 TA
+function blindReasonFor(g, positive, occLabel, vibeLabel) {
+  const hits = (g.tags || []).filter(t => positive && positive.has(t));
+  const top = hits.slice(0, 3);
+  const tagPart = top.length ? `贴 ${top.join(" / ")}` : "颜值与实用都在线";
+  const ctx = [occLabel, vibeLabel].filter(Boolean).join(" · ");
+  return ctx ? `${tagPart},适合 ${ctx}` : `${tagPart}`;
+}
+
 function blindRecommend(shuffleSeed) {
   const budget = BUDGETS.find(x => x.id === state.blind.budget);
   if (!budget) return [];
-  const inBudget = g => g.priceMin <= budget.max && g.priceMax >= budget.min;
+  // 严格按典型价过滤:priceTypical 必须落在预算带内(±15% 容差,防止数据边缘卡死)
+  // 没有 priceTypical 的礼物降级用 (priceMin+priceMax)/2
+  const tol = 0.15;
+  const lo = budget.min * (1 - tol);
+  const hi = budget.max * (1 + tol);
+  const typicalOf = g => (typeof g.priceTypical === "number" ? g.priceTypical : (g.priceMin + g.priceMax) / 2);
+  const inBudget = g => { const t = typicalOf(g); return t >= lo && t <= hi; };
   const { positive, negative, strictAllow } = blindSignalTags();
 
   let pool = GIFTS.filter(inBudget);
@@ -531,6 +546,7 @@ function renderBlindResult() {
 
   const occLabel = labelOf("occasion", state.blind.occasion);
   const vibeLabel = labelOf("vibe", state.blind.vibe);
+  const { positive } = blindSignalTags();
 
   let html = `
     <div class="blind-result-head">
@@ -560,7 +576,7 @@ function renderBlindResult() {
               <div class="gift-name">${escapeHtml(g.name)}</div>
               <div class="gift-price">${escapeHtml(g.priceLabel || "")}</div>
             </div>
-            <div class="gift-reason">${escapeHtml(g.reason || "")}</div>
+            <div class="gift-reason">${escapeHtml(blindReasonFor(g, positive, occLabel, vibeLabel))}</div>
             <div class="gift-shop-row">
               <a class="shop-btn tb" href="${tbUrl}" target="_blank" rel="noopener noreferrer">
                 <span class="shop-mark">淘</span> 淘宝搜
