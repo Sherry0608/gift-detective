@@ -890,6 +890,30 @@ textarea, input { font-family: inherit; }
   margin-top: 6px;
 }
 
+/* 盲盒结果页专用:给内容左右加内边距,避免卡片顽格 */
+.result-root.is-blind .blind-result-head {
+  padding: 26px 20px 10px;
+}
+.result-root.is-blind .gift-list {
+  padding: 4px 18px 8px;
+}
+.result-root.is-blind .gift-card {
+  padding: 16px 0;
+}
+.result-root.is-blind .save-case-bar {
+  padding: 16px 16px 22px;
+  margin: 0;
+  justify-content: center;
+  gap: 8px;
+}
+.result-root.is-blind .save-case-bar .save-case-btn {
+  padding: 9px 12px;
+  font-size: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
 .result-hero {
   position: relative;
   padding: 28px 22px 22px;

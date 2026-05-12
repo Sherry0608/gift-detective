@@ -599,6 +599,7 @@ function renderBlindResult() {
   `;
 
   root.innerHTML = html;
+  root.classList.add("is-blind");
   root.querySelector("#blindShuffleBtn").addEventListener("click", () => {
     state._blindShuffle++;
     renderBlindResult();
@@ -1056,6 +1057,7 @@ function renderResult(opts) {
   });
 
   const resultRoot = document.getElementById("resultRoot");
+  resultRoot.classList.remove("is-blind");
   resultRoot.innerHTML = `
     <div class="result-hero">
       <div class="case-no">CASE #${dateCode()} · 调查完毕</div>
