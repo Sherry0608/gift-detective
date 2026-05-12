@@ -538,6 +538,16 @@ textarea, input { font-family: inherit; }
   border-style: solid;
   border-color: #c2924a;
 }
+/* 返回首页：次要按钮 */
+.save-case-btn-ghost {
+  color: #8a6f55;
+  border: 1.5px solid #e2d3bb;
+  background: transparent;
+}
+.save-case-btn-ghost:hover {
+  background: #f5ebd9;
+  border-color: #c9b594;
+}
 .save-case-tag {
   font-size: 11px;
   color: #8a5a1a;

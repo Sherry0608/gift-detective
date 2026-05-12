@@ -853,6 +853,7 @@ function renderResult(opts) {
 
     <div class="save-case-bar">
       <button class="save-case-btn" id="saveCaseBtn">📂 把这份报告存进档案</button>
+      <button class="save-case-btn save-case-btn-ghost" id="backHomeBtn">← 返回首页</button>
       ${state._historyLabel ? `<span class="save-case-tag">当前档案：${escapeHtml(state._historyLabel)}</span>` : ""}
     </div>
   `;
@@ -865,6 +866,8 @@ function renderResult(opts) {
   });
   const sb = resultRoot.querySelector("#saveCaseBtn");
   if (sb) sb.addEventListener("click", promptSaveCase);
+  const bh = resultRoot.querySelector("#backHomeBtn");
+  if (bh) bh.addEventListener("click", restart);
   resultRoot.querySelectorAll(".gift-letter-btn").forEach(btn => {
     btn.addEventListener("click", () => handleGenerateLetter(btn));
   });
