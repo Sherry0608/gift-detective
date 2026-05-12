@@ -227,18 +227,7 @@ function renderRelations() {
     grid.appendChild(btn);
   });
 
-  // 末尾追加一张“不太了解 TA”入口卡,走盲盒分支
-  const blind = document.createElement("button");
-  blind.className = "opt-card opt-card-blind";
-  blind.innerHTML = `
-    <div class="opt-emoji">🎁</div>
-    <div class="opt-body">
-      <div class="opt-title">不太了解 TA</div>
-      <div class="opt-hint">走盲盒,只说由预算/性别/场合抽礼物</div>
-    </div>
-  `;
-  blind.addEventListener("click", () => enterBlindMode());
-  grid.appendChild(blind);
+  // (已移除 Step 1 末尾的“不太了解 TA”入口;封面的盲盒按钮保留)
 }
 
 // ---------- 渲染 Step 2 预算 ----------
