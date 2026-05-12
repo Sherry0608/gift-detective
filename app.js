@@ -549,16 +549,25 @@ function renderBlindResult() {
     html += `<div class="blind-empty">按这个组合没拽出合适的礼物,试试换个预算档或放宽一下“熟不熟”?</div>`;
   } else {
     gifts.forEach(g => {
-      const taobaoUrl = `https://s.taobao.com/search?q=${encodeURIComponent(g.searchQuery || g.name)}`;
+      const q = encodeURIComponent(g.searchQuery || g.name);
+      const tbUrl = `https://s.taobao.com/search?q=${q}`;
+      const xhsUrl = `https://www.xiaohongshu.com/search_result?keyword=${q}`;
       html += `
         <div class="gift-card">
           <div class="gift-emoji">${g.emoji || "🎁"}</div>
           <div class="gift-body">
-            <div class="gift-name">${escapeHtml(g.name)}</div>
-            <div class="gift-price">${escapeHtml(g.priceLabel || "")}</div>
+            <div class="gift-top">
+              <div class="gift-name">${escapeHtml(g.name)}</div>
+              <div class="gift-price">${escapeHtml(g.priceLabel || "")}</div>
+            </div>
             <div class="gift-reason">${escapeHtml(g.reason || "")}</div>
-            <div class="gift-actions">
-              <a class="gift-link" href="${taobaoUrl}" target="_blank" rel="noopener">去淘宝看看 →</a>
+            <div class="gift-shop-row">
+              <a class="shop-btn tb" href="${tbUrl}" target="_blank" rel="noopener noreferrer">
+                <span class="shop-mark">淘</span> 淘宝搜
+              </a>
+              <a class="shop-btn xhs" href="${xhsUrl}" target="_blank" rel="noopener noreferrer">
+                <span class="shop-mark xhs-mark">书</span> 小红书搜
+              </a>
             </div>
           </div>
         </div>
