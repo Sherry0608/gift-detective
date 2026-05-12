@@ -194,6 +194,11 @@ function goto(screen) {
   if (galleryBack) {
     galleryBack.hidden = !(screen === "gallery" && state._galleryReturnTo === "result");
   }
+
+  // 封面：刷新档案列表
+  if (screen === "cover" && typeof renderHistoryOnCover === "function") {
+    renderHistoryOnCover();
+  }
 }
 
 // ---------- 渲染 Step 1 关系 ----------
@@ -364,7 +369,20 @@ function dimStrength(scores) {
 //   personalized：根据开放题 tag 命中的礼物库礼物
 //   personaPicks：按人格+关系补足
 // 总共控制在 6 件
-function recommendGifts() {
+// 纯函数随机数生成器（用 seed 让摇一摇可重复）
+function seededShuffle(arr, seed) {
+  if (!seed) return arr.slice();
+  const a = arr.slice();
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 9301 + 49297) % 233280;
+    const j = Math.floor((s / 233280) * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function recommendGifts(shuffleSeed) {
   const persona = state.persona;
   const budget = BUDGETS.find(b => b.id === state.budget);
   const relation = state.relation;
@@ -426,6 +444,23 @@ function recommendGifts() {
     }).filter(x => x.hits > 0)
       .sort((a, b) => b.score - a.score);
 
+    // shuffle 模式下：同分互换顺序
+    if (shuffleSeed) {
+      const sgroups = {};
+      scored.forEach(x => {
+        const k = x.score.toFixed(2);
+        if (!sgroups[k]) sgroups[k] = [];
+        sgroups[k].push(x);
+      });
+      const sk = Object.keys(sgroups).sort((a, b) => parseFloat(b) - parseFloat(a));
+      const reshuffled = [];
+      sk.forEach((k, ki) => {
+        reshuffled.push(...seededShuffle(sgroups[k], shuffleSeed + 100 + ki * 3));
+      });
+      scored.length = 0;
+      scored.push(...reshuffled);
+    }
+
     // 精准位置 = PRECISE_CAP - 已经出现的动态卡数量
     const tagSlots = Math.max(0, PRECISE_CAP - entityCards.length);
     for (const x of scored) {
@@ -467,13 +502,39 @@ function recommendGifts() {
     return s;
   }
 
+  // 同档位内随机打乱（摇一摇时），同档位之间还是按优先级处理
+  const t1 = seededShuffle(tier1, shuffleSeed);
+  const t2 = seededShuffle(tier2, shuffleSeed ? shuffleSeed + 1 : 0);
+  const t3 = seededShuffle(tier3, shuffleSeed ? shuffleSeed + 2 : 0);
+  const t4 = seededShuffle(tier4, shuffleSeed ? shuffleSeed + 3 : 0);
   const personaPool = [
-    ...tier1.map(g => ({ g, tier: 1, score: scoreGift(g, 1) })),
-    ...tier2.map(g => ({ g, tier: 2, score: scoreGift(g, 2) })),
-    ...tier3.map(g => ({ g, tier: 3, score: scoreGift(g, 3) })),
-    ...tier4.map(g => ({ g, tier: 4, score: scoreGift(g, 4) }))
+    ...t1.map(g => ({ g, tier: 1, score: scoreGift(g, 1) })),
+    ...t2.map(g => ({ g, tier: 2, score: scoreGift(g, 2) })),
+    ...t3.map(g => ({ g, tier: 3, score: scoreGift(g, 3) })),
+    ...t4.map(g => ({ g, tier: 4, score: scoreGift(g, 4) }))
   ];
+  // 不再可一次性按 score 排序——同 tier 的顺序保留 shuffle 后的隆位
+  // 但高 tier 依然在前
   personaPool.sort((a, b) => b.score - a.score);
+
+  // 如果在 shuffle 模式下，对同分的礼物随机互换顺序
+  if (shuffleSeed) {
+    // 按 score 分组，组内 shuffle
+    const groups = {};
+    personaPool.forEach(h => {
+      const k = h.score.toFixed(2);
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(h);
+    });
+    const sortedKeys = Object.keys(groups).sort((a, b) => parseFloat(b) - parseFloat(a));
+    const newPool = [];
+    sortedKeys.forEach((k, ki) => {
+      const shuffled = seededShuffle(groups[k], shuffleSeed + ki * 7);
+      newPool.push(...shuffled);
+    });
+    personaPool.length = 0;
+    personaPool.push(...newPool);
+  }
 
   const personaPicks = [];
   for (const h of personaPool) {
@@ -576,9 +637,14 @@ function renderDimChips(scores, code) {
 }
 
 // ---------- 渲染结果 ----------
-function renderResult() {
+function renderResult(opts) {
+  opts = opts || {};
   let code, scores;
-  if (state._presetPersona) {
+  if (opts.keepPersona && state.persona) {
+    // 摇一摇时不重新计算人格
+    code = state.persona;
+    scores = state.scores;
+  } else if (state._presetPersona) {
     // 来自图鉴：直接使用锁定的人格，不走问卷
     code = state._presetPersona;
     scores = presetScoresFor(code);
@@ -589,7 +655,7 @@ function renderResult() {
   state.scores = scores;
   state.persona = code;
   const persona = PERSONAS[code];
-  const { entityCards, personalized, personaPicks, hitWords } = recommendGifts();
+  const { entityCards, personalized, personaPicks, hitWords } = recommendGifts(opts.shuffleSeed);
   const totalCount = entityCards.length + personalized.length + personaPicks.length;
   const hitKw = findHitKeywords();
   const strength = dimStrength(scores);
@@ -675,6 +741,12 @@ function renderResult() {
             `}
           </div>
           ${isOffline && g.channelHint ? `<div class="gift-channel-hint">🏪 ${g.channelHint}</div>` : ''}
+          ${kind !== "entity" ? `
+          <div class="gift-letter-wrap" data-gift-idx="${idx}">
+            <button class="gift-letter-btn" data-gift-name="${escapeHtml(g.name)}" data-gift-reason="${escapeHtml(g.reason)}" data-gift-echoes='${JSON.stringify(g._echo || [])}'>✉️ 生成送礼留言</button>
+            <div class="gift-letter-output" hidden></div>
+          </div>
+          ` : ""}
         </div>
       </div>
     `;
@@ -766,6 +838,11 @@ function renderResult() {
         看看其他 15 型礼物人格 →
       </button>
     </div>
+
+    <div class="save-case-bar">
+      <button class="save-case-btn" id="saveCaseBtn">📂 把这份报告存进档案</button>
+      ${state._historyLabel ? `<span class="save-case-tag">当前档案：${escapeHtml(state._historyLabel)}</span>` : ""}
+    </div>
   `;
   // 绑定跳转
   setTimeout(() => {
@@ -774,6 +851,12 @@ function renderResult() {
       state._galleryReturnTo = "result";
       renderGallery();
       goto("gallery");
+    });
+    const sb = document.getElementById("saveCaseBtn");
+    if (sb) sb.addEventListener("click", promptSaveCase);
+    // 生成礼物留言按钮
+    document.querySelectorAll(".gift-letter-btn").forEach(btn => {
+      btn.addEventListener("click", () => handleGenerateLetter(btn));
     });
   }, 0);
 
@@ -915,6 +998,8 @@ function restart() {
   state.persona = null;
   state.scores = null;
   state._presetPersona = null;
+  state._historyLabel = null;
+  state._shuffleCount = 0;
   document.querySelectorAll(".opt-card, .budget-card").forEach(c => c.classList.remove("selected"));
   document.querySelectorAll(".open-field textarea").forEach(t => t.value = "");
   goto("cover");
@@ -1077,8 +1162,18 @@ function init() {
     if (e.target.id === "imageModal") closeImageModal();
   });
   document.getElementById("wechatBtn").addEventListener("click", shareToWechat);
-  document.getElementById("copyLinkBtn").addEventListener("click", copyLink);
   document.getElementById("retryBtn").addEventListener("click", restart);
+  document.getElementById("reshuffleBtn").addEventListener("click", () => {
+    state._shuffleCount = (state._shuffleCount || 0) + 1;
+    const seed = Date.now() % 100000 + state._shuffleCount * 1000;
+    renderResult({ keepPersona: true, shuffleSeed: seed });
+    // 滚动到礼物区
+    setTimeout(() => {
+      const el = document.querySelector(".gifts-section");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    showToast("🎲 换了一批礼物");
+  });
   document.getElementById("closeWechatModal").addEventListener("click", () => {
     document.getElementById("wechatModal").hidden = true;
   });
@@ -1108,6 +1203,282 @@ function init() {
   document.addEventListener("keydown", e => {
     if (e.key === "Escape" && !document.getElementById("personaDrawer").hidden) closeDrawer();
   });
+}
+
+// ============================================================
+// 本地历史档案  存 localStorage
+// ============================================================
+const HISTORY_KEY = "gd_history_v1";
+const HISTORY_MAX = 20;
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveHistory(list) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, HISTORY_MAX)));
+  } catch (e) {}
+}
+
+function addHistoryEntry(label) {
+  if (!state.persona) return null;
+  const list = loadHistory();
+  // 取当前推荐的前 3 件作为预览
+  const rec = recommendGifts();
+  const top3 = [...rec.entityCards, ...rec.personalized, ...rec.personaPicks]
+    .slice(0, 3)
+    .map(g => ({ name: g.name, emoji: g.emoji || "🎁" }));
+  const persona = PERSONAS[state.persona];
+  const entry = {
+    id: "c" + Date.now().toString(36) + Math.floor(Math.random() * 99),
+    ts: Date.now(),
+    label: (label || "").trim() || `未命名档案`,
+    code: state.persona,
+    personaName: persona ? persona.name : "",
+    personaEmoji: persona ? persona.emoji : "🎁",
+    relation: state.relation,
+    budget: state.budget,
+    open: { ...state.open },
+    top3
+  };
+  // 去重：同 label + persona + 同一天只保留最新一条
+  const dayMs = 24 * 60 * 60 * 1000;
+  const filtered = list.filter(e =>
+    !(e.label === entry.label && e.code === entry.code && Math.abs(e.ts - entry.ts) < dayMs)
+  );
+  filtered.unshift(entry);
+  saveHistory(filtered);
+  return entry;
+}
+
+function removeHistoryEntry(id) {
+  const list = loadHistory().filter(e => e.id !== id);
+  saveHistory(list);
+}
+
+function openHistoryEntry(id) {
+  const entry = loadHistory().find(e => e.id === id);
+  if (!entry) return;
+  // 重建 state 以还原结果
+  state.relation = entry.relation;
+  state.budget = entry.budget;
+  state.open = entry.open || { o1: "", o2: "", o3: "", o4: "" };
+  state.persona = entry.code;
+  state.scores = presetScoresFor(entry.code);
+  state._presetPersona = entry.code;  // 跳过 quiz
+  state._historyLabel = entry.label;
+  renderResult();
+}
+
+// 在封面顶部渲染档案抽屉
+function renderHistoryOnCover() {
+  const wrap = document.getElementById("historyWrap");
+  if (!wrap) return;
+  const list = loadHistory();
+  if (list.length === 0) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  const items = list.slice(0, 4).map(e => {
+    const top3Str = e.top3.map(g => g.emoji).join(" ");
+    const dateStr = formatRelTime(e.ts);
+    return `
+      <button class="hist-card" data-id="${e.id}">
+        <div class="hist-emoji">${e.personaEmoji}</div>
+        <div class="hist-body">
+          <div class="hist-label">${escapeHtml(e.label)}</div>
+          <div class="hist-meta">${e.personaName} · ${dateStr}</div>
+          <div class="hist-top3">${top3Str}</div>
+        </div>
+        <span class="hist-del" data-del="${e.id}" aria-label="删除">×</span>
+      </button>
+    `;
+  }).join("");
+  wrap.innerHTML = `
+    <div class="hist-head">
+      <span class="hist-head-title">📂 你的送礼档案</span>
+      <span class="hist-head-count">${list.length} 条</span>
+    </div>
+    <div class="hist-list">${items}</div>
+  `;
+  // 点击打开 / 删除
+  wrap.querySelectorAll(".hist-card").forEach(card => {
+    card.addEventListener("click", (e) => {
+      if (e.target.classList.contains("hist-del")) {
+        const did = e.target.getAttribute("data-del");
+        removeHistoryEntry(did);
+        renderHistoryOnCover();
+        e.stopPropagation();
+        return;
+      }
+      const id = card.getAttribute("data-id");
+      openHistoryEntry(id);
+    });
+  });
+}
+
+function formatRelTime(ts) {
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "刚刚";
+  if (m < 60) return `${m} 分钟前`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} 小时前`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d} 天前`;
+  const date = new Date(ts);
+  return `${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+function escapeHtml(s) {
+  return (s || "").replace(/[&<>\"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
+
+// ============================================================
+// 生成送礼留言（优先后端 LLM，失败或无后端限降级到本地模板池）
+// ============================================================
+async function handleGenerateLetter(btn) {
+  const wrap = btn.closest(".gift-letter-wrap");
+  const out = wrap.querySelector(".gift-letter-output");
+  const giftName = btn.getAttribute("data-gift-name");
+  const reason = btn.getAttribute("data-gift-reason");
+  let echoes = [];
+  try { echoes = JSON.parse(btn.getAttribute("data-gift-echoes") || "[]"); } catch (e) {}
+
+  btn.disabled = true;
+  btn.textContent = "✉️ 推敲中...";
+  out.hidden = false;
+  out.innerHTML = `<div class="letter-loading">✨ 侦探正在为这份礼物推敲措辞...</div>`;
+
+  const persona = PERSONAS[state.persona];
+  const rel = RELATIONS.find(r => r.id === state.relation);
+  const openText = Object.values(state.open).join(" ");
+
+  const payload = {
+    gift_name: giftName,
+    persona_name: persona ? persona.name : "",
+    relation: rel ? rel.label : "",
+    open_text: openText,
+    echo_words: echoes,
+    reason: reason
+  };
+
+  // 尝试后端（存在时）
+  let result = null;
+  try {
+    const resp = await fetch("/api/letter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      // 12s 超时
+      signal: AbortSignal.timeout ? AbortSignal.timeout(12000) : undefined
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.ok && (data.warm || data.witty)) {
+        result = { warm: data.warm, witty: data.witty, source: "ai" };
+      }
+    }
+  } catch (e) {
+    // 静默失败，走本地模板
+  }
+
+  // 降级到本地模板
+  if (!result) {
+    result = generateLetterFromTemplates(giftName, persona, rel, echoes);
+  }
+
+  renderLetter(out, result);
+  btn.disabled = false;
+  btn.textContent = "🔄 再写一版";
+}
+
+function renderLetter(container, r) {
+  const note = r.source === "ai" ? "AI 为你生成" : "从侦探素材库组合";
+  container.innerHTML = `
+    <div class="letter-card">
+      <div class="letter-meta">✨ ${note}</div>
+      ${r.warm ? `<div class="letter-block"><span class="letter-tag warm">温暖款</span><p>${escapeHtml(r.warm)}</p></div>` : ""}
+      ${r.witty ? `<div class="letter-block"><span class="letter-tag witty">俏皮款</span><p>${escapeHtml(r.witty)}</p></div>` : ""}
+      <div class="letter-actions">
+        <button class="letter-copy-btn" data-text="${escapeHtml((r.warm || "") + (r.witty ? "\n\n" + r.witty : ""))}">📋 复制全部</button>
+      </div>
+    </div>
+  `;
+  const cb = container.querySelector(".letter-copy-btn");
+  if (cb) {
+    cb.addEventListener("click", () => {
+      const txt = cb.getAttribute("data-text") || "";
+      // 解码 HTML entities 回原文
+      const tmp = document.createElement("textarea");
+      tmp.innerHTML = txt;
+      const plain = tmp.value;
+      navigator.clipboard && navigator.clipboard.writeText(plain).then(
+        () => showToast("已复制，去给 TA 发吧 💌"),
+        () => showToast("复制失败，请手动选取")
+      );
+    });
+  }
+}
+
+// 本地模板池：纯静态环境下的降级方案
+function generateLetterFromTemplates(giftName, persona, rel, echoes) {
+  const echoStr = echoes && echoes.length > 0 ? echoes[0] : "";
+  const personaName = persona ? persona.name : "你";
+  const relLabel = rel ? rel.label : "朋友";
+
+  // 温暖款模板池
+  const warmPool = [
+    `以为送你的是东西，其实是一份留意。最近看你这么辛苦，这件${giftName}你值得。`,
+    `这件${giftName}送你。希望它出现在你的一天里时，刚好是你需要它的那个瞬间。`,
+    `看到这个${giftName}的时候，第一个想到的就是你。不多不少，刚刚好。`,
+    `送你一件${giftName}，代替一句我说不出口的“你辛苦了”。`,
+  ];
+  // 俏皮款模板池
+  const wittyPool = [
+    `听说这件${giftName}能治愈一切不快乐。是否有效，你试了告诉我。`,
+    `别叫我双子座。送你这件${giftName}已经是我送礼生涯的高光时刻了，记得狠狠夸我。`,
+    `这件${giftName}是侦探选的，不是我。但帐走的是我，记得谢我。`,
+    `不是什么贵重礼品，只是看到了就想到你。别点评。`,
+  ];
+
+  // 如果有 echo 词，贴近一点
+  let warm = warmPool[Math.floor(Math.random() * warmPool.length)];
+  let witty = wittyPool[Math.floor(Math.random() * wittyPool.length)];
+  if (echoStr) {
+    // 按关键词加入临场干预
+    if (["加班", "加班到凌晨", "通宵", "失眠", "颈椎", "肩颈", "黑眼圈"].some(k => echoStr.includes(k))) {
+      warm = `听你说最近${echoStr}。送你这件${giftName}，能让你多休息一分钟也是好的。`;
+    } else if (["考研", "考公", "复习", "考试"].some(k => echoStr.includes(k))) {
+      warm = `你一直在为${echoStr}努力，这件${giftName}陪你走到下一个里程碑。`;
+    } else {
+      warm = `记得你说过${echoStr}。送你这件${giftName}，希望你是难得开心的。`;
+    }
+  }
+
+  return { warm, witty, source: "template" };
+}
+
+// 提存按钮点击
+function promptSaveCase() {
+  const defaultLabel = state._historyLabel || "";
+  // 用原生 prompt，简单可靠
+  const input = window.prompt("给这份档案起个名字（如：给小美的生日礼、老妈母亲节）：", defaultLabel);
+  if (input === null) return; // cancel
+  const entry = addHistoryEntry(input);
+  if (entry) {
+    state._historyLabel = entry.label;
+    showToast("✅ 已存入档案「" + entry.label + "」");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", init);

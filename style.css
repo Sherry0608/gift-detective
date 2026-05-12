@@ -413,6 +413,140 @@ textarea, input { font-family: inherit; }
   color: var(--ink-mute); font-size: 12px; margin-top: 16px;
 }
 
+/* ============ 送礼档案 ============ */
+.history-wrap {
+  margin: 28px 22px 0;
+  text-align: left;
+  padding: 16px 16px 14px;
+  background: linear-gradient(135deg, #fff9f0 0%, #fef3e1 100%);
+  border: 1.5px solid #f0d4a3;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(220, 170, 90, 0.1);
+}
+.hist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.hist-head-title {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: #8a5a1a;
+}
+.hist-head-count {
+  font-size: 11px;
+  color: #a8740f;
+  background: #fff;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.hist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hist-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #f3dcb3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  transition: transform .15s, box-shadow .15s;
+  width: 100%;
+  font-family: inherit;
+}
+.hist-card:hover, .hist-card:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 170, 90, 0.18);
+  border-color: #e4b876;
+}
+.hist-emoji {
+  font-size: 26px;
+  width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.hist-body { flex: 1; min-width: 0; }
+.hist-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hist-meta {
+  font-size: 11px;
+  color: var(--ink-mute);
+  margin-top: 2px;
+}
+.hist-top3 {
+  font-size: 14px;
+  margin-top: 4px;
+  letter-spacing: 2px;
+}
+.hist-del {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  line-height: 20px;
+  text-align: center;
+  border-radius: 50%;
+  color: #c97e4f;
+  font-size: 16px;
+  background: rgba(255, 240, 220, 0.6);
+  cursor: pointer;
+  font-weight: 400;
+}
+.hist-del:hover {
+  background: #f6c3a1;
+  color: #fff;
+}
+
+/* ============ 结果页「存进档案」按钮 ============ */
+.save-case-bar {
+  margin: 14px 22px 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.save-case-btn {
+  background: #fff;
+  color: #8a5a1a;
+  border: 1.5px dashed #d8a86a;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+.save-case-btn:hover {
+  background: #fff8ec;
+  border-style: solid;
+  border-color: #c2924a;
+}
+.save-case-tag {
+  font-size: 11px;
+  color: #8a5a1a;
+  background: #fdebcd;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
 /* ============ 按钮 ============ */
 .primary-btn {
   background: var(--ink);
@@ -1241,3 +1375,124 @@ textarea, input { font-family: inherit; }
 .snapshot-mode .share-bar,
 .snapshot-mode .result-foot { display: none !important; }
 .snapshot-mode #app { padding-bottom: 0 !important; }
+
+/* ============ AI 送礼留言 ============ */
+.gift-letter-wrap {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(0,0,0,.08);
+}
+.gift-letter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a5a1a;
+  background: linear-gradient(135deg, #fff9f0, #fef3e1);
+  border: 1px solid #f0d4a3;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform .12s var(--ease), box-shadow .12s var(--ease), background .2s var(--ease);
+}
+.gift-letter-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(138, 90, 26, .15);
+  background: linear-gradient(135deg, #fef3e1, #fce5c0);
+}
+.gift-letter-btn:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+.gift-letter-output {
+  margin-top: 12px;
+}
+.gift-letter-output[hidden] { display: none; }
+
+.letter-card {
+  background: linear-gradient(180deg, #fffaf2 0%, #fef3e1 100%);
+  border: 1px solid #f0d4a3;
+  border-radius: 14px;
+  padding: 14px 16px 12px;
+  box-shadow: 0 2px 8px rgba(138, 90, 26, .06);
+  animation: letterIn .35s var(--ease);
+}
+@keyframes letterIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.letter-meta {
+  font-size: 11px;
+  color: #b08440;
+  letter-spacing: .04em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.letter-block {
+  margin: 8px 0;
+}
+.letter-block p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #4a341a;
+  white-space: pre-wrap;
+}
+
+.letter-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  letter-spacing: .02em;
+}
+.letter-tag.warm {
+  background: #fce5c0;
+  color: #8a5a1a;
+  border: 1px solid #f0d4a3;
+}
+.letter-tag.witty {
+  background: #ede7f6;
+  color: #6a4ba8;
+  border: 1px solid #d6c9ee;
+}
+
+.letter-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.letter-copy-btn {
+  font-size: 12px;
+  padding: 6px 12px;
+  color: #6a4ba8;
+  background: #fff;
+  border: 1px solid #d6c9ee;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s var(--ease), transform .12s var(--ease);
+}
+.letter-copy-btn:hover {
+  background: #ede7f6;
+  transform: translateY(-1px);
+}
+
+.letter-loading {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: #b08440;
+  background: linear-gradient(90deg, #fffaf2, #fef3e1, #fffaf2);
+  background-size: 200% 100%;
+  border: 1px dashed #f0d4a3;
+  border-radius: 14px;
+  animation: letterShimmer 1.4s linear infinite;
+}
+@keyframes letterShimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
