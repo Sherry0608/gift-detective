@@ -721,6 +721,62 @@ textarea, input { font-family: inherit; }
   font-size: 13px;
 }
 
+/* 命中线索卡 —— 重要反馈用户抓到了什么信号 */
+.hit-clues {
+  margin: 0 22px 16px;
+  padding: 14px 16px 12px;
+  background: linear-gradient(135deg, #fff4e6 0%, #ffe9d6 100%);
+  border: 1.5px solid #f4b97e;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(244, 165, 90, 0.12);
+}
+.hit-clues-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.hit-clues-icon {
+  font-size: 18px;
+}
+.hit-clues-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #a8540f;
+  flex: 1;
+}
+.hit-clues-count {
+  font-size: 11px;
+  color: #a8540f;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.hit-clues-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.hit-chip {
+  display: inline-block;
+  background: #fff;
+  color: #b35e1a;
+  border: 1px solid #f0c89a;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.hit-clues-foot {
+  font-size: 11px;
+  color: #a8540f;
+  opacity: .75;
+  font-style: italic;
+}
+
 /* 礼物列表 */
 .gifts-section {
   padding: 22px 18px 26px;
@@ -880,6 +936,20 @@ textarea, input { font-family: inherit; }
   font-size: 13px; color: var(--ink-soft);
   line-height: 1.55;
   margin-bottom: 10px;
+}
+.gift-echo {
+  font-size: 12px;
+  color: #6b4cb8;
+  background: linear-gradient(90deg, #efe7ff 0%, #f7f3ff 100%);
+  border-left: 3px solid #8b6dd6;
+  padding: 5px 9px;
+  border-radius: 6px;
+  margin: 4px 0 8px;
+  line-height: 1.45;
+}
+.gift-echo b {
+  color: #4a2c8a;
+  font-weight: 600;
 }
 .gift-rank {
   position: absolute;

@@ -86,7 +86,57 @@ const OPEN_KEYWORDS = [
   // 纪念日 / 仪式感
   { match: ["纪念日","周年","领证","结婚","恋爱","求婚"], tags: ["纪念日","定制","仪式感","刻字"] },
   // 工作 / 通勤 / 职场
-  { match: ["上班","通勤","出差","职场","工作","升职","商务","白领"], tags: ["通勤","职场","商务"] }
+  { match: ["上班","通勤","出差","职场","工作","升职","商务","白领","老板","同事","开会","汇报","项目","deadline"], tags: ["通勤","职场","商务","办公","效率"] },
+
+  // ====== 下面是补充的高频信号 ======
+  // 追剧 / 看综艺 / 影视
+  { match: ["追剧","看剧","剧荒","netflix","奈飞","综艺","乐队的夏天","纪录片","剧集","短剧","老剧","番剧","动漫","二次元"], tags: ["文艺","治愈","居家","氛围"] },
+  // 健身 / 运动 / 减肥 加强
+  { match: ["健身房","撸铁","举铁","跑步","跑马拉松","足球","羽毛球","打球","网球","骑行","骑车","游泳","跳操","普拉提","卡路里","减脂","塑形"], tags: ["运动","户外","健康"] },
+  // 加班 / 累 / 内卷 加强
+  { match: ["考研","考公","考学","复习","考试","写代码","写论文","赶报告","加班到凌晨","通宵","赶项目","deadline"], tags: ["加班","劳累","职场","效率","助眠"] },
+  // 海外 / 旅居
+  { match: ["出国","海外","留学","东京","伦敦","纽约","游学","海外党","在国外","日本","欧洲"], tags: ["旅行","礼盒","仪式感"] },
+  // 摸鱼 / 工作状态
+  { match: ["摸鱼","点外卖","打卡","脱发","黑眼圈","什么都不想干","上班如上坟","工位","工位摆件"], tags: ["效率","办公","桌面","治愈"] },
+  // 宅在家 / 宅文化
+  { match: ["宅宅","宅家","宅在家","足不出户","不出门","周末不出门","被窝","沙发土豆"], tags: ["居家","治愈","桌面","氛围"] },
+  // Z 世代黑话
+  { match: ["上头","上头了","入坑","爷青回","姐妹","yyds","家人们","绝绝子","集美","宝贝","种草","安利","emo","破防"], tags: ["治愈","可爱","潮流","小众"] },
+  // 婴儿 / 送同事朋友生孩子
+  { match: ["宝宝","婴儿","新生儿","产后","满月","百天","孩子出生","临产","生孩子","升级当爸","升级当妈"], tags: ["婴儿","礼盒","治愈"] },
+  // 书法 / 手工
+  { match: ["书法","练字","拓印","手工艺","手作","陶艺","陶瓷","独立手作","调香","羊毛毡","刺绣"], tags: ["DIY","传统","仪式","文艺","手工"] },
+  // 打卡 / 探店 / 生活方式博主感
+  { match: ["探店","网红店","下午茶","咖啡馆","city walk","citywalk","逛马路","逛街","小红书"], tags: ["体验","文艺","氛围","打卡"] },
+  // 学习 / 兴趣班
+  { match: ["学吉他","学钢琴","瑜伽","吉他","民谣","插花","调酒课","兴趣班","课程","绘画课","陶艺课"], tags: ["体验","仪式","课程","文艺"] },
+  // 深夜 / 一个人
+  { match: ["一个人住","一个人看电影","深夜","独居","夜猫子","凌晨三点","安静的夜晚","失眠"], tags: ["助眠","治愈","氛围","居家"] },
+  // 颈椎 / 肩颈 / 久坐
+  { match: ["眼袋","颈椎","肩颈","肩膀酸","腰酸","腰疼","肌肉酸痛","职业病","坐久了","久坐","按摩"], tags: ["按摩","颈椎","健康","劳累"] },
+  // 节日 / 节气
+  { match: ["中秋","春节","过年","元宵","端午","七夕","农历","节气","二十四节气"], tags: ["节日","传统","礼盒","仪式感"] },
+  // 乔迁 / 装修
+  { match: ["改造","装修","入住","乔迁","新家","新居","公寓","搬家"], tags: ["乔迁","居家","摆件","装饰"] },
+  // 商务 / 送长辈
+  { match: ["业务","拜访","拜年","走动","上门","领导","客户","重要场合","长辈","父母"], tags: ["商务","送长辈","传统","高端","礼盒"] },
+  // 吃货 / 美食
+  { match: ["甜品","吃货","吃点好的","马卡龙","蛋糕","烘焙","做饭","做菜","美食","下厨"], tags: ["烘焙","餐具","陶瓷","礼盒"] },
+  // 生病 / 养生
+  { match: ["生病","出院","住院","体检","发烧","头疼","不舒服","养生","中医","养生壶"], tags: ["健康","养生","送长辈"] },
+  // 愿望 / 仪式
+  { match: ["愿望清单","心愿","人生清单","梦想","状态很好","状态越来越好","新年新气象"], tags: ["仪式感","定制","纪念日"] },
+  // 数码控 / 极客
+  { match: ["数码","极客","科技","电子产品","耳机","键盘","机械键盘","显示器","游戏机","switch","ps5"], tags: ["数码","桌面","办公"] },
+  // 摄影 / vlog
+  { match: ["摄影","拍照","拍视频","vlog","相机","胶片","拍立得","剪辑"], tags: ["数码","小众","文艺"] },
+  // 香氛 / 氛围
+  { match: ["香薰","香水","香氛","蜡烛","精油","香气","气味"], tags: ["香氛","氛围","居家","治愈"] },
+  // 阅读 / 文艺
+  { match: ["看书","读书","小说","散文","诗集","村上春树","卡夫卡","播客","podcast"], tags: ["文艺","小众","治愈","居家"] },
+  // 收藏 / 手办
+  { match: ["手办","潮玩","盲盒","泡泡玛特","乐高","模型","高达","周边"], tags: ["收藏","小众","潮流"] }
 ];
 
 
@@ -341,22 +391,38 @@ function recommendGifts() {
   // 动态卡名也指入 usedNames，避免重复名字
   entityCards.forEach(ec => usedNames.add(ec.name));
 
+  // 反查：每条 OPEN_KEYWORDS 命中后，找出原文里实际出现的词
+  function findEchoWordsForTags(targetTags) {
+    const echoes = [];
+    for (const rule of OPEN_KEYWORDS) {
+      const ruleHitsTag = rule.tags.some(t => targetTags.includes(t));
+      if (!ruleHitsTag) continue;
+      for (const w of rule.match) {
+        if (openText.includes(w.toLowerCase()) && !echoes.includes(w)) {
+          echoes.push(w);
+        }
+      }
+    }
+    return echoes;
+  }
+
   if (hitTags.size > 0) {
     // 为预算内的每件礼物计算开放题命中分
     const scored = inBudgetGifts.map(g => {
       let hits = 0;
-      g.tags.forEach(t => { if (hitTags.has(t)) hits++; });
+      const matchedTags = [];
+      g.tags.forEach(t => { if (hitTags.has(t)) { hits++; matchedTags.push(t); } });
       // 额外：礼物名 / searchQuery 被开放题原文提起，极强信号
       const nameHit = openText && (
         openText.includes((g.name || "").toLowerCase()) ||
         (g.searchQuery && g.searchQuery.toLowerCase().split(/\s+/).some(w => w && openText.includes(w)))
       );
-      let score = hits * 3;
-      if (nameHit) score += 2;
+      let score = hits * 5;
+      if (nameHit) score += 4;
       // 同人格+关系加一点点，用于同分时排序
       if (g.personas.includes(persona)) score += 0.6;
       if (g.relations.includes(relation)) score += 0.4;
-      return { g, score, hits };
+      return { g, score, hits, matchedTags };
     }).filter(x => x.hits > 0)
       .sort((a, b) => b.score - a.score);
 
@@ -365,7 +431,10 @@ function recommendGifts() {
     for (const x of scored) {
       if (personalized.length >= tagSlots) break;
       if (!usedNames.has(x.g.name)) {
-        personalized.push(x.g);
+        // 浅拷贝礼物对象，附加 _echo 字段（命中的原文词，最多 2 个）
+        const echoes = findEchoWordsForTags(x.matchedTags).slice(0, 2);
+        const giftWithEcho = Object.assign({}, x.g, { _echo: echoes });
+        personalized.push(giftWithEcho);
         usedNames.add(x.g.name);
       }
     }
@@ -520,7 +589,7 @@ function renderResult() {
   state.scores = scores;
   state.persona = code;
   const persona = PERSONAS[code];
-  const { entityCards, personalized, personaPicks } = recommendGifts();
+  const { entityCards, personalized, personaPicks, hitWords } = recommendGifts();
   const totalCount = entityCards.length + personalized.length + personaPicks.length;
   const hitKw = findHitKeywords();
   const strength = dimStrength(scores);
@@ -586,6 +655,7 @@ function renderResult() {
             ${priceHtml}
           </div>
           <div class="gift-badge-row">${badge}</div>
+          ${kind === "personalized" && g._echo && g._echo.length ? `<div class="gift-echo">💬 你说 TA <b>${g._echo.join("、")}</b> →</div>` : ""}
           <div class="gift-reason">${g.reason}</div>
           <div class="gift-shop-row">
             ${isOffline ? `
@@ -643,6 +713,20 @@ function renderResult() {
       <div class="note-head">🔎 侦探备忘录</div>
       <div class="note-body">${detective}</div>
     </div>
+
+    ${hitWords && hitWords.length > 0 ? `
+      <div class="hit-clues">
+        <div class="hit-clues-head">
+          <span class="hit-clues-icon">🔥</span>
+          <span class="hit-clues-title">从 TA 的描述里抓到的线索</span>
+          <span class="hit-clues-count">${hitWords.length} 个关键词</span>
+        </div>
+        <div class="hit-clues-chips">
+          ${hitWords.map(w => `<span class="hit-chip">${w}</span>`).join("")}
+        </div>
+        <div class="hit-clues-foot">下面「根据你的描述」那块的推荐，都是顺着这些线索选的</div>
+      </div>
+    ` : ""}
 
     <div class="gifts-section">
       <div class="gifts-head">
