@@ -282,9 +282,21 @@ function renderQuiz() {
       state.answers[i] = opt.value;
       optsEl.querySelectorAll(".quiz-opt").forEach(x => x.classList.remove("picked"));
       b.classList.add("picked");
-      // 选完即可点“下一题/提交答案”;同步刷新底部按钮状态
+      // 同步刷新“下一题/提交”按钮
       updateQuizNextBtn();
       optsEl.classList.remove("unanswered-highlight");
+      // 自动跳转下一题(最后一题不自动提交,交由用户点提交按钮,避免误提交)
+      // 跳转前还能改主意：同一题再次点击会重置计时器
+      if (state.quizIdx < QUESTIONS.length - 1) {
+        clearTimeout(state._autoNextTimer);
+        state._autoNextTimer = setTimeout(() => {
+          // 再次确认当前题仍是这一题且已答
+          if (state.quizIdx === i && state.answers[i]) {
+            state.quizIdx++;
+            renderQuiz();
+          }
+        }, 380);
+      }
     });
     optsEl.appendChild(b);
   });
@@ -1112,6 +1124,7 @@ function init() {
   document.getElementById("restartBtn").addEventListener("click", restart);
 
   document.getElementById("quizBack").addEventListener("click", () => {
+    clearTimeout(state._autoNextTimer);
     if (state.quizIdx > 0) {
       state.quizIdx--;
       renderQuiz();
@@ -1119,6 +1132,7 @@ function init() {
   });
 
   document.getElementById("quizNext").addEventListener("click", () => {
+    clearTimeout(state._autoNextTimer);
     // 未答时按钮 disabled,这里只处理已答情况
     if (!state.answers[state.quizIdx]) {
       // 兜底:提示用户先选一项
