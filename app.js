@@ -15,7 +15,10 @@ const state = {
   quizIdx: 0,
   open: { o1: "", o2: "", o3: "", o4: "" },
   persona: null,
-  scores: null
+  scores: null,
+  // 盲盒模式存储 7 个字段
+  blind: { budget: null, gender: null, age: null, job: null, occasion: null, vibe: null, closeness: null },
+  _blindShuffle: 0
 };
 
 // ---------- 开放题关键词词典 ----------
@@ -223,6 +226,19 @@ function renderRelations() {
     });
     grid.appendChild(btn);
   });
+
+  // 末尾追加一张“不太了解 TA”入口卡,走盲盒分支
+  const blind = document.createElement("button");
+  blind.className = "opt-card opt-card-blind";
+  blind.innerHTML = `
+    <div class="opt-emoji">🎁</div>
+    <div class="opt-body">
+      <div class="opt-title">不太了解 TA</div>
+      <div class="opt-hint">走盲盒,只说由预算/性别/场合抽礼物</div>
+    </div>
+  `;
+  blind.addEventListener("click", () => enterBlindMode());
+  grid.appendChild(blind);
 }
 
 // ---------- 渲染 Step 2 预算 ----------
@@ -336,6 +352,244 @@ function updateQuizNextBtn() {
   nextBtn.classList.toggle("submit", isLast);
   const answered = !!state.answers[i];
   nextBtn.disabled = !answered;
+}
+
+// =========================================================
+// 礼物盲盒模式
+// =========================================================
+
+const BLIND_FIELDS = {
+  gender: [
+    { id: "m",   label: "男生",   tags: ["职场","数码","机械","运动","户外"] },
+    { id: "f",   label: "女生",   tags: ["香水","香氛","穿搭","小众","设计","治愈"] },
+    { id: "any", label: "不确定", tags: [] }
+  ],
+  age: [
+    { id: "student", label: "学生时代", tags: ["潮流","二次元","盲盒","治愈","可爱","潮玩"] },
+    { id: "young",   label: "职场新人", tags: ["通勤","职场","效率","数码"] },
+    { id: "mid",     label: "中青年",   tags: ["养生","茶","实用","健康","品质"] },
+    { id: "senior",  label: "长辈",     tags: ["养生","健康","传统","茶","丝巾","实用"] }
+  ],
+  job: [
+    { id: "brain",    label: "脑力劳动", tags: ["数码","键盘","耳机","阅读"] },
+    { id: "body",     label: "体力/户外", tags: ["运动","户外","露营","健康","实用"] },
+    { id: "creative", label: "创意/设计", tags: ["设计","设计师","文具","手账","文艺","小众"] },
+    { id: "other",    label: "其他",     tags: [] }
+  ],
+  occasion: [
+    { id: "birthday", label: "生日",     tags: ["庆祝","仪式感","礼盒"] },
+    { id: "holiday",  label: "节日/节庆", tags: ["庆祝","派对","礼盒","仪式感"] },
+    { id: "thanks",   label: "表示感谢", tags: ["茶","商务","职场","礼盒"] },
+    { id: "casual",   label: "随手送送", tags: ["治愈","实用"] },
+    { id: "farewell", label: "告别/纪念", tags: ["纪念","仪式感","传统"] }
+  ],
+  vibe: [
+    { id: "useful",   label: "实用才是硬道理", tags: ["实用","效率"] },
+    { id: "warm",     label: "有点心意就行",   tags: ["仪式感","治愈","文艺"] },
+    { id: "fun",      label: "热闹气氛拉满",   tags: ["派对","聚会","桌游","盲盒","潮玩"] },
+    { id: "luxe",     label: "高级感上去",   tags: ["设计师","小众","皮具","香水","品质"] }
+  ],
+  closeness: [
+    { id: "close",    label: "很熟, 什么都能送", tags: [], blockTags: [] },
+    { id: "normal",   label: "一般熟悉",         tags: [],
+      blockTags: ["香水"] },
+    { id: "distant",  label: "不太熟, 小心送",   tags: ["职场","商务","茶","礼盒","实用","通勤"],
+      blockTags: ["香水","二次元","潮玩","盲盒"], strict: true }
+  ]
+};
+
+function enterBlindMode() {
+  // 进入盲盒:重置人格流状态,初始化 7 字段
+  state.relation = null;
+  state.budget = null;
+  state.answers = [];
+  state.persona = null;
+  state.blind = { budget: null, gender: null, age: null, job: null, occasion: null, vibe: null, closeness: null };
+  state._blindShuffle = 0;
+  renderBlindForm();
+  goto("blind");
+}
+
+function renderBlindForm() {
+  const mounts = {
+    budget:    { el: document.getElementById("blindBudget"),    opts: BUDGETS.map(b => ({ id: b.id, label: b.label })) },
+    gender:    { el: document.getElementById("blindGender"),    opts: BLIND_FIELDS.gender },
+    age:       { el: document.getElementById("blindAge"),       opts: BLIND_FIELDS.age },
+    job:       { el: document.getElementById("blindJob"),       opts: BLIND_FIELDS.job },
+    occasion:  { el: document.getElementById("blindOccasion"),  opts: BLIND_FIELDS.occasion },
+    vibe:      { el: document.getElementById("blindVibe"),      opts: BLIND_FIELDS.vibe },
+    closeness: { el: document.getElementById("blindCloseness"), opts: BLIND_FIELDS.closeness }
+  };
+  Object.entries(mounts).forEach(([key, { el, opts }]) => {
+    if (!el) return;
+    el.innerHTML = "";
+    opts.forEach(o => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "blind-chip";
+      b.textContent = o.label;
+      if (state.blind[key] === o.id) b.classList.add("picked");
+      b.addEventListener("click", () => {
+        state.blind[key] = o.id;
+        el.querySelectorAll(".blind-chip").forEach(x => x.classList.remove("picked"));
+        b.classList.add("picked");
+      });
+      el.appendChild(b);
+    });
+  });
+  document.getElementById("blindRevealBtn").onclick = handleBlindReveal;
+}
+
+function handleBlindReveal() {
+  // 预算为必填,其他字段依然处理:未选则不加分、不过滤
+  if (!state.blind.budget) {
+    showToast("预算为必选项,先选一个吧");
+    return;
+  }
+  state._blindShuffle = 0;
+  renderBlindResult();
+}
+
+function blindSignalTags() {
+  const positive = new Set();
+  const negative = new Set();
+  let strictAllow = null;
+  const b = state.blind;
+  function addTags(field, id) {
+    if (!id) return;
+    const def = BLIND_FIELDS[field];
+    if (!def) return;
+    const o = def.find(x => x.id === id);
+    if (!o) return;
+    (o.tags || []).forEach(t => positive.add(t));
+    (o.blockTags || []).forEach(t => negative.add(t));
+    if (o.strict && o.tags && o.tags.length) {
+      strictAllow = new Set([...(strictAllow || []), ...o.tags]);
+    }
+  }
+  addTags("gender", b.gender);
+  addTags("age", b.age);
+  addTags("job", b.job);
+  addTags("occasion", b.occasion);
+  addTags("vibe", b.vibe);
+  addTags("closeness", b.closeness);
+  return { positive, negative, strictAllow };
+}
+
+function blindRecommend(shuffleSeed) {
+  const budget = BUDGETS.find(x => x.id === state.blind.budget);
+  if (!budget) return [];
+  const inBudget = g => g.priceMin <= budget.max && g.priceMax >= budget.min;
+  const { positive, negative, strictAllow } = blindSignalTags();
+
+  let pool = GIFTS.filter(inBudget);
+  // 严格过滤(不太熟):只保留 strictAllow 里的 tag
+  if (strictAllow) {
+    pool = pool.filter(g => g.tags.some(t => strictAllow.has(t)));
+  }
+  // 负过滤:包含任一 negative tag 的踢出
+  if (negative.size) {
+    pool = pool.filter(g => !g.tags.some(t => negative.has(t)));
+  }
+
+  // 打分:命中 positive tag 加分(价格不参与评分,避免每件礼物都变成唯一分数导致随机差)
+  const scored = pool.map(g => {
+    let score = 0;
+    g.tags.forEach(t => { if (positive.has(t)) score += 3; });
+    return { g, score };
+  });
+
+  // 按分数排序 同分人设计上可互换
+  scored.sort((a, b) => b.score - a.score);
+  // 高分池(护航) + 中分池随机补足
+  const TOP = 6;
+  const POOL_FOR_SHUFFLE = Math.min(scored.length, Math.max(12, TOP * 2));
+  const candidates = scored.slice(0, POOL_FOR_SHUFFLE);
+  const seed = (shuffleSeed || 0) * 1009 + 17;
+  const shuffled = seededShuffle(candidates, seed);
+  return shuffled.slice(0, TOP).map(x => x.g);
+}
+
+function renderBlindResult() {
+  const gifts = blindRecommend(state._blindShuffle);
+  const budget = BUDGETS.find(x => x.id === state.blind.budget);
+  const root = document.getElementById("resultRoot");
+  state._isBlindResult = true;
+
+  // 拼一个人话描述
+  const labelOf = (field, id) => {
+    const def = BLIND_FIELDS[field];
+    if (!def) return "";
+    const o = def.find(x => x.id === id);
+    return o ? o.label : "";
+  };
+  const desc = [
+    labelOf("gender", state.blind.gender),
+    labelOf("age", state.blind.age),
+    labelOf("job", state.blind.job),
+  ].filter(Boolean).join(" · ");
+
+  const occLabel = labelOf("occasion", state.blind.occasion);
+  const vibeLabel = labelOf("vibe", state.blind.vibe);
+
+  let html = `
+    <div class="blind-result-head">
+      <div class="case-no">礼物盲盒 #${dateCode()}</div>
+      <h2 class="blind-result-title">为这位 ${desc || "TA"} 拍到了 ${gifts.length} 件礼物</h2>
+      <p class="blind-result-sub">
+        预算 ¥${budget.label}
+        ${occLabel ? " · " + escapeHtml(occLabel) : ""}
+        ${vibeLabel ? " · " + escapeHtml(vibeLabel) : ""}
+      </p>
+    </div>
+    <div class="gift-list">
+  `;
+
+  if (!gifts.length) {
+    html += `<div class="blind-empty">按这个组合没拽出合适的礼物,试试换个预算档或放宽一下“熟不熟”?</div>`;
+  } else {
+    gifts.forEach(g => {
+      const taobaoUrl = `https://s.taobao.com/search?q=${encodeURIComponent(g.searchQuery || g.name)}`;
+      html += `
+        <div class="gift-card">
+          <div class="gift-emoji">${g.emoji || "🎁"}</div>
+          <div class="gift-body">
+            <div class="gift-name">${escapeHtml(g.name)}</div>
+            <div class="gift-price">${escapeHtml(g.priceLabel || "")}</div>
+            <div class="gift-reason">${escapeHtml(g.reason || "")}</div>
+            <div class="gift-actions">
+              <a class="gift-link" href="${taobaoUrl}" target="_blank" rel="noopener">去淘宝看看 →</a>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+  html += `</div>
+    <div class="save-case-bar">
+      <button class="save-case-btn save-case-btn-ghost" id="blindShuffleBtn">🎲 抽下一批</button>
+      <button class="save-case-btn save-case-btn-ghost" id="blindBackEditBtn">✏️ 改改条件</button>
+      <button class="save-case-btn save-case-btn-ghost" id="blindBackHomeBtn">← 返回首页</button>
+    </div>
+  `;
+
+  root.innerHTML = html;
+  root.querySelector("#blindShuffleBtn").addEventListener("click", () => {
+    state._blindShuffle++;
+    renderBlindResult();
+  });
+  root.querySelector("#blindBackEditBtn").addEventListener("click", () => {
+    goto("blind");
+    renderBlindForm();
+  });
+  root.querySelector("#blindBackHomeBtn").addEventListener("click", restart);
+
+  goto("result");
+  // 隐藏人格结果专属的 share-bar(它位于 screen 末尾),避免错位
+  const shareBar = document.querySelector(".screen[data-screen='result'] .share-bar");
+  const resultFoot = document.querySelector(".screen[data-screen='result'] .result-foot");
+  if (shareBar) shareBar.style.display = "none";
+  if (resultFoot) resultFoot.style.display = "none";
 }
 
 // ---------- 评分 & 人格判定 ----------
@@ -1012,8 +1266,16 @@ function restart() {
   state._presetPersona = null;
   state._historyLabel = null;
   state._shuffleCount = 0;
+  state._isBlindResult = false;
+  state.blind = { budget: null, gender: null, age: null, job: null, occasion: null, vibe: null, closeness: null };
+  state._blindShuffle = 0;
   document.querySelectorAll(".opt-card, .budget-card").forEach(c => c.classList.remove("selected"));
   document.querySelectorAll(".open-field textarea").forEach(t => t.value = "");
+  // 恢复人格结果页的底部菜单(被盲盒隐藏过)
+  const sb = document.querySelector(".screen[data-screen='result'] .share-bar");
+  const rf = document.querySelector(".screen[data-screen='result'] .result-foot");
+  if (sb) sb.style.display = "";
+  if (rf) rf.style.display = "";
   goto("cover");
 }
 
@@ -1124,6 +1386,8 @@ function init() {
   goto("cover");
 
   document.getElementById("startBtn").addEventListener("click", () => goto("relation"));
+  const coverBlind = document.getElementById("coverBlindBtn");
+  if (coverBlind) coverBlind.addEventListener("click", enterBlindMode);
   document.getElementById("restartBtn").addEventListener("click", restart);
 
   document.getElementById("quizBack").addEventListener("click", () => {

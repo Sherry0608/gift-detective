@@ -548,6 +548,111 @@ textarea, input { font-family: inherit; }
   background: #f5ebd9;
   border-color: #c9b594;
 }
+/* ============ 封面“礼物盲盒”次级按钮 ============ */
+.cover-blind-btn {
+  display: block;
+  margin: 14px auto 0;
+  padding: 10px 18px;
+  background: transparent;
+  color: #8a6f55;
+  border: 1.5px dashed #d8a86a;
+  border-radius: 999px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .15s;
+}
+.cover-blind-btn:hover {
+  background: #fff8ec;
+  border-style: solid;
+  border-color: #c2924a;
+  color: #6b4d28;
+}
+
+/* ============ 关系页“不太了解 TA”入口卡 ============ */
+.opt-card-blind {
+  border: 1.5px dashed #d8a86a !important;
+  background: linear-gradient(180deg, #fffbf4, #fff5e1) !important;
+}
+.opt-card-blind:hover {
+  border-color: #c2924a !important;
+}
+
+/* ============ 盲盒表单 ============ */
+.blind-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 8px 22px 32px;
+}
+.blind-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.blind-label {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.blind-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.blind-chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #e2d3bb;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .12s;
+}
+.blind-chip:hover {
+  border-color: #c2924a;
+  background: #fff8ec;
+}
+.blind-chip.picked {
+  background: var(--ink);
+  color: #fff8e7;
+  border-color: var(--ink);
+}
+#blindRevealBtn {
+  margin-top: 12px;
+}
+
+/* ============ 盲盒结果头 ============ */
+.blind-result-head {
+  padding: 24px 22px 8px;
+  text-align: center;
+}
+.blind-result-head .case-no {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.blind-result-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+.blind-result-sub {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.blind-empty {
+  padding: 28px 22px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
 .save-case-tag {
   font-size: 11px;
   color: #8a5a1a;
