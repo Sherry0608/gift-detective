@@ -917,7 +917,7 @@ function openPersonaDrawer(code) {
       <div class="dp-gifts">${giftsHtml || '<div class="dp-text">暴雨收集中…</div>'}</div>
     </div>
     <div class="dp-action">
-      <button class="primary-btn" id="drawerStart">为「${p.name}」型的人测一次 →</button>
+      <button class="primary-btn" id="drawerStart">该给「${p.name}」型送什么 →</button>
     </div>
   `;
   document.getElementById("personaDrawer").hidden = false;
