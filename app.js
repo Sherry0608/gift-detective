@@ -282,15 +282,9 @@ function renderQuiz() {
       state.answers[i] = opt.value;
       optsEl.querySelectorAll(".quiz-opt").forEach(x => x.classList.remove("picked"));
       b.classList.add("picked");
-      // 下一题或进入开放题
-      setTimeout(() => {
-        if (state.quizIdx < QUESTIONS.length - 1) {
-          state.quizIdx++;
-          renderQuiz();
-        } else {
-          goto("open");
-        }
-      }, 240);
+      // 选完即可点“下一题/提交答案”;同步刷新底部按钮状态
+      updateQuizNextBtn();
+      optsEl.classList.remove("unanswered-highlight");
     });
     optsEl.appendChild(b);
   });
@@ -307,16 +301,8 @@ function renderQuiz() {
   // 上一题按钮
   document.getElementById("quizBack").disabled = (i === 0);
 
-  // 下一题按钮：只有在已答过当前题、且不是最后一题时显示
-  const nextBtn = document.getElementById("quizNext");
-  const answered = !!state.answers[i];
-  const hasMore = i < QUESTIONS.length - 1;
-  if (answered && hasMore) {
-    nextBtn.hidden = false;
-    nextBtn.disabled = false;
-  } else {
-    nextBtn.hidden = true;
-  }
+  // 下一题/提交按钮：每题都展示。未答时禁用,最后一题文案改为“提交答案”
+  updateQuizNextBtn();
 
   // 未答高亮：从 reveal 校验跳回时附加
   if (state._highlightUnanswered) {
@@ -325,6 +311,19 @@ function renderQuiz() {
   } else {
     optsEl.classList.remove("unanswered-highlight");
   }
+}
+
+// 统一刷新“下一题/提交答案”按钮的可点状态与文案
+function updateQuizNextBtn() {
+  const i = state.quizIdx;
+  const nextBtn = document.getElementById("quizNext");
+  if (!nextBtn) return;
+  nextBtn.hidden = false;
+  const isLast = i === QUESTIONS.length - 1;
+  nextBtn.textContent = isLast ? "提交答案 →" : "下一题 →";
+  nextBtn.classList.toggle("submit", isLast);
+  const answered = !!state.answers[i];
+  nextBtn.disabled = !answered;
 }
 
 // ---------- 评分 & 人格判定 ----------
@@ -1120,6 +1119,14 @@ function init() {
   });
 
   document.getElementById("quizNext").addEventListener("click", () => {
+    // 未答时按钮 disabled,这里只处理已答情况
+    if (!state.answers[state.quizIdx]) {
+      // 兜底:提示用户先选一项
+      const optsEl = document.getElementById("quizOptions");
+      optsEl.classList.add("unanswered-highlight");
+      showToast("先选一个再下一题吧");
+      return;
+    }
     if (state.quizIdx < QUESTIONS.length - 1) {
       state.quizIdx++;
       renderQuiz();

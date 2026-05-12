@@ -570,6 +570,26 @@ textarea, input { font-family: inherit; }
 .ghost-btn:hover { background: var(--cream-2); }
 .ghost-btn:disabled { opacity: .35; cursor: not-allowed; }
 
+/* “下一题”变体：选过之后的高亮提示 */
+.ghost-btn#quizNext:not(:disabled) {
+  color: var(--ink); background: var(--cream-2);
+  font-weight: 600;
+}
+.ghost-btn#quizNext:not(:disabled):hover {
+  background: #f0d4a3; color: var(--ink);
+}
+/* 最后一题的“提交答案”：加重表现 */
+.ghost-btn#quizNext.submit:not(:disabled) {
+  background: var(--ink);
+  color: #fff8e7;
+  padding: 9px 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.ghost-btn#quizNext.submit:not(:disabled):hover {
+  background: #2a1f12;
+  color: #fff8e7;
+}
+
 /* ============ Step 头部 ============ */
 .step-head {
   padding: 8px 4px 22px;
