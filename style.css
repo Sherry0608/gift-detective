@@ -1641,3 +1641,31 @@ textarea, input { font-family: inherit; }
   padding: 10px 20px;
   font-size: 14px;
 }
+
+/* 盲盒档案卡 + 模式 chip */
+.hist-card.hist-card-blind {
+  background: linear-gradient(135deg, #fff 0%, #fff7e6 100%);
+  border-color: #f0d8a8;
+}
+.hist-mode-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #b8762a;
+  background: #fff1d6;
+  border-radius: 6px;
+  vertical-align: middle;
+}
+/* 盲盒结果区:存档按钮和三个操作按钮分两行更清楚 */
+.blind-result-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.blind-result-actions .save-case-btn {
+  flex: 1 1 30%;
+  min-width: 90px;
+}

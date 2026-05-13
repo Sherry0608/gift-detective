@@ -757,9 +757,13 @@ function renderBlindResult() {
   }
   html += `</div>
     <div class="save-case-bar">
-      <button class="save-case-btn save-case-btn-ghost" id="blindShuffleBtn">🎲 抽下一批</button>
-      <button class="save-case-btn save-case-btn-ghost" id="blindBackEditBtn">✏️ 改改条件</button>
-      <button class="save-case-btn save-case-btn-ghost" id="blindBackHomeBtn">← 返回首页</button>
+      <button class="save-case-btn" id="blindSaveCaseBtn">📂 把这次盲盒存进档案</button>
+      ${state._historyLabel ? `<span class="save-case-tag">当前档案:${escapeHtml(state._historyLabel)}</span>` : ""}
+      <div class="blind-result-actions">
+        <button class="save-case-btn save-case-btn-ghost" id="blindShuffleBtn">🎲 抽下一批</button>
+        <button class="save-case-btn save-case-btn-ghost" id="blindBackEditBtn">✏️ 改改条件</button>
+        <button class="save-case-btn save-case-btn-ghost" id="blindBackHomeBtn">← 返回首页</button>
+      </div>
     </div>
   `;
 
@@ -774,6 +778,8 @@ function renderBlindResult() {
     renderBlindForm();
   });
   root.querySelector("#blindBackHomeBtn").addEventListener("click", restart);
+  const blindSaveBtn = root.querySelector("#blindSaveCaseBtn");
+  if (blindSaveBtn) blindSaveBtn.addEventListener("click", promptSaveBlindCase);
 
   goto("result");
   // 隐藏人格结果专属的 share-bar(它位于 screen 末尾),避免错位
@@ -1724,6 +1730,7 @@ function addHistoryEntry(label) {
   const entry = {
     id: "c" + Date.now().toString(36) + Math.floor(Math.random() * 99),
     ts: Date.now(),
+    mode: "persona",
     label: (label || "").trim() || `未命名档案`,
     code: state.persona,
     personaName: persona ? persona.name : "",
@@ -1733,10 +1740,56 @@ function addHistoryEntry(label) {
     open: { ...state.open },
     top3
   };
-  // 去重：同 label + persona + 同一天只保留最新一条
+  // 去重:同 label + persona + 同一天只保留最新一条
   const dayMs = 24 * 60 * 60 * 1000;
   const filtered = list.filter(e =>
     !(e.label === entry.label && e.code === entry.code && Math.abs(e.ts - entry.ts) < dayMs)
+  );
+  filtered.unshift(entry);
+  saveHistory(filtered);
+  return entry;
+}
+
+// 盲盒流:把一次抽盒的条件 + 推荐前 3 件存档
+function addBlindHistoryEntry(label) {
+  if (!state.blind || !state.blind.budget) return null;
+  const list = loadHistory();
+  const gifts = blindRecommend(state._blindShuffle || 0);
+  const top3 = gifts.slice(0, 3).map(g => ({ name: g.name, emoji: g.emoji || "🎁" }));
+
+  // 拼一句自然的「TA 是谁」描述,作为副标题
+  const labelOf = (field, id) => {
+    const def = BLIND_FIELDS[field];
+    if (!def) return "";
+    const o = def.find(x => x.id === id);
+    return o ? o.label : "";
+  };
+  const whoBits = [
+    labelOf("age", state.blind.age),
+    labelOf("gender", state.blind.gender),
+    labelOf("job", state.blind.job)
+  ].filter(Boolean);
+  const occLabel = labelOf("occasion", state.blind.occasion);
+  const vibeLabel = labelOf("vibe", state.blind.vibe);
+  const subtitleBits = [];
+  if (whoBits.length) subtitleBits.push(whoBits.join(" · "));
+  if (occLabel) subtitleBits.push(occLabel);
+  if (vibeLabel) subtitleBits.push(vibeLabel);
+
+  const entry = {
+    id: "b" + Date.now().toString(36) + Math.floor(Math.random() * 99),
+    ts: Date.now(),
+    mode: "blind",
+    label: (label || "").trim() || `未命名盲盒`,
+    blind: { ...state.blind },
+    shuffleSeed: state._blindShuffle || 0,
+    subtitle: subtitleBits.join(" · ") || "随手一抽",
+    top3
+  };
+  // 去重:同 label + 同一天的盲盒档案只留最新
+  const dayMs = 24 * 60 * 60 * 1000;
+  const filtered = list.filter(e =>
+    !(e.label === entry.label && e.mode === "blind" && Math.abs(e.ts - entry.ts) < dayMs)
   );
   filtered.unshift(entry);
   saveHistory(filtered);
@@ -1751,6 +1804,10 @@ function removeHistoryEntry(id) {
 function openHistoryEntry(id) {
   const entry = loadHistory().find(e => e.id === id);
   if (!entry) return;
+  if (entry.mode === "blind") {
+    openBlindHistoryEntry(entry);
+    return;
+  }
   // 重建 state 以还原结果
   state.relation = entry.relation;
   state.budget = entry.budget;
@@ -1760,6 +1817,15 @@ function openHistoryEntry(id) {
   state._presetPersona = entry.code;  // 跳过 quiz
   state._historyLabel = entry.label;
   renderResult();
+}
+
+function openBlindHistoryEntry(entry) {
+  // 复原盲盒条件并跳到结果页
+  state.blind = { budget: null, gender: null, age: null, job: null, occasion: null, vibe: null, closeness: null, ...(entry.blind || {}) };
+  state._blindShuffle = entry.shuffleSeed || 0;
+  state._historyLabel = entry.label;
+  state._isBlindResult = true;
+  renderBlindResult();
 }
 
 // 在封面顶部渲染档案抽屉
@@ -1775,12 +1841,17 @@ function renderHistoryOnCover() {
   const items = list.slice(0, 4).map(e => {
     const top3Str = e.top3.map(g => g.emoji).join(" ");
     const dateStr = formatRelTime(e.ts);
+    const isBlind = e.mode === "blind";
+    const headEmoji = isBlind ? "🎁" : (e.personaEmoji || "🎁");
+    const metaText = isBlind
+      ? `礼物盲盒 · ${escapeHtml(e.subtitle || "随手一抽")} · ${dateStr}`
+      : `${escapeHtml(e.personaName || "")} · ${dateStr}`;
     return `
-      <button class="hist-card" data-id="${e.id}">
-        <div class="hist-emoji">${e.personaEmoji}</div>
+      <button class="hist-card${isBlind ? " hist-card-blind" : ""}" data-id="${e.id}">
+        <div class="hist-emoji">${headEmoji}</div>
         <div class="hist-body">
-          <div class="hist-label">${escapeHtml(e.label)}</div>
-          <div class="hist-meta">${e.personaName} · ${dateStr}</div>
+          <div class="hist-label">${escapeHtml(e.label)}${isBlind ? ` <span class="hist-mode-chip">盲盒</span>` : ""}</div>
+          <div class="hist-meta">${metaText}</div>
           <div class="hist-top3">${top3Str}</div>
         </div>
         <span class="hist-del" data-del="${e.id}" aria-label="删除">×</span>
@@ -1868,6 +1939,80 @@ function promptSaveCase() {
       showToast("✅ 已存入档案「" + entry.label + "」");
       // 重新渲染 result 以显示「当前档案」标签
       try { renderResult({ keepPersona: true, shuffleSeed: state._shuffleCount || 0 }); } catch(e) {}
+    }
+  }
+  function onCancel() { cleanup(); }
+  function onKey(e) {
+    if (e.key === "Enter") { e.preventDefault(); onOk(); }
+    else if (e.key === "Escape") { onCancel(); }
+  }
+  function onMaskClick(e) { if (e.target === modal) onCancel(); }
+
+  okBtn.addEventListener("click", onOk);
+  cancelBtn.addEventListener("click", onCancel);
+  input.addEventListener("keydown", onKey);
+  modal.addEventListener("click", onMaskClick);
+}
+
+// 盲盒流版的存档案 prompt — 复用同一个 modal,只是保存路径走 addBlindHistoryEntry
+function promptSaveBlindCase() {
+  const modal = document.getElementById("caseNameModal");
+  const input = document.getElementById("caseNameInput");
+  const okBtn = document.getElementById("caseNameOk");
+  const cancelBtn = document.getElementById("caseNameCancel");
+  const titleEl = modal ? modal.querySelector("h3") : null;
+  const subEl = modal ? modal.querySelector(".modal-card > p") : null;
+
+  // 自动起一个像人话的默认名:用副标题第一段(年龄·性别·职业 / 场合)做提示
+  const labelOf = (field, id) => {
+    const def = BLIND_FIELDS[field];
+    if (!def) return "";
+    const o = def.find(x => x.id === id);
+    return o ? o.label : "";
+  };
+  const occLabel = labelOf("occasion", state.blind.occasion);
+  const ageLabel = labelOf("age", state.blind.age);
+  const defaultName = state._historyLabel || (occLabel ? `${occLabel}盲盒` : (ageLabel ? `${ageLabel}盲盒` : ""));
+
+  if (!modal || !input || !okBtn || !cancelBtn) {
+    const fallback = window.prompt("给这次盲盒起个名字:", defaultName);
+    if (fallback === null) return;
+    const entry = addBlindHistoryEntry(fallback);
+    if (entry) {
+      state._historyLabel = entry.label;
+      showToast("✅ 已存入档案「" + entry.label + "」");
+    }
+    return;
+  }
+
+  // 临时改 modal 文案,关掉时恢复
+  const origTitle = titleEl ? titleEl.textContent : "";
+  const origSub = subEl ? subEl.textContent : "";
+  if (titleEl) titleEl.textContent = "给这次盲盒起个名字";
+  if (subEl) subEl.textContent = "比如「520 闺蜜盲盒」「同事生日随手抽」,之后可以从首页直接回看这次的礼物组合";
+  input.value = defaultName;
+  input.placeholder = "如:520 闺蜜盲盒、同事生日随手抽";
+  modal.hidden = false;
+  setTimeout(() => { input.focus(); input.select(); }, 60);
+
+  function cleanup() {
+    modal.hidden = true;
+    okBtn.removeEventListener("click", onOk);
+    cancelBtn.removeEventListener("click", onCancel);
+    input.removeEventListener("keydown", onKey);
+    modal.removeEventListener("click", onMaskClick);
+    if (titleEl) titleEl.textContent = origTitle;
+    if (subEl) subEl.textContent = origSub;
+    input.placeholder = "如:给小美的生日礼、老妈母亲节";
+  }
+  function onOk() {
+    const val = input.value.trim();
+    cleanup();
+    const entry = addBlindHistoryEntry(val);
+    if (entry) {
+      state._historyLabel = entry.label;
+      showToast("✅ 已存入档案「" + entry.label + "」");
+      try { renderBlindResult(); } catch(e) {}
     }
   }
   function onCancel() { cleanup(); }
