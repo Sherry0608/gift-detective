@@ -117,35 +117,35 @@
       <div class="step-head">
         <span class="step-num">礼物盲盒</span>
         <h2>不说 TA 是谁,只说 TA 大概的样子</h2>
-        <p class="step-hint">7 个轻量选择,足够拋出 6 件不会太跳的礼物。</p>
+        <p class="step-hint">只有预算是必选，其余 6 项填哪个都行。</p>
       </div>
       <div class="blind-form" id="blindForm">
-        <div class="blind-field" data-field="budget">
-          <span class="blind-label">💸 预算</span>
+        <div class="blind-field is-required" data-field="budget">
+          <span class="blind-label">💸 预算<span class="blind-req-tag required">必选</span></span>
           <div class="blind-options" id="blindBudget"></div>
         </div>
         <div class="blind-field" data-field="gender">
-          <span class="blind-label">⚧ 性别</span>
+          <span class="blind-label">⚧ 性别<span class="blind-req-tag optional">可选</span></span>
           <div class="blind-options" id="blindGender"></div>
         </div>
         <div class="blind-field" data-field="age">
-          <span class="blind-label">🎉 大致年龄段</span>
+          <span class="blind-label">🎉 大致年龄段<span class="blind-req-tag optional">可选</span></span>
           <div class="blind-options" id="blindAge"></div>
         </div>
         <div class="blind-field" data-field="job">
-          <span class="blind-label">💼 职业方向</span>
+          <span class="blind-label">💼 职业方向<span class="blind-req-tag optional">可选</span></span>
           <div class="blind-options" id="blindJob"></div>
         </div>
         <div class="blind-field" data-field="occasion">
-          <span class="blind-label">📅 场合</span>
+          <span class="blind-label">📅 场合<span class="blind-req-tag optional">可选</span></span>
           <div class="blind-options" id="blindOccasion"></div>
         </div>
         <div class="blind-field" data-field="vibe">
-          <span class="blind-label">✨ 想送的感觉</span>
+          <span class="blind-label">✨ 想送的感觉<span class="blind-req-tag optional">可选</span></span>
           <div class="blind-options" id="blindVibe"></div>
         </div>
         <div class="blind-field" data-field="closeness">
-          <span class="blind-label">🤝 你们熟不熟</span>
+          <span class="blind-label">🤝 你们熟不熟<span class="blind-req-tag optional">可选</span></span>
           <div class="blind-options" id="blindCloseness"></div>
         </div>
         <button class="primary-btn big" id="blindRevealBtn">抽出 6 件礼物 →</button>

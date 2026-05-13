@@ -591,9 +591,42 @@ textarea, input { font-family: inherit; }
   gap: 8px;
 }
 .blind-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
   color: var(--ink-soft);
   font-weight: 600;
+}
+.blind-req-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  line-height: 1.4;
+}
+.blind-req-tag.required {
+  color: #c0392b;
+  background: #fdecea;
+  border: 1px solid #f5c6c0;
+}
+.blind-req-tag.required::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c0392b;
+  margin-right: 5px;
+  display: inline-block;
+}
+.blind-req-tag.optional {
+  color: #8a7a5e;
+  background: #f5efe3;
+  border: 1px solid #e2d3bb;
+  font-weight: 500;
 }
 .blind-options {
   display: flex;
