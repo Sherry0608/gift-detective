@@ -84,20 +84,47 @@
       <div class="grid grid-relation" id="relationGrid"></div>
     </section>
 
-    <!-- ============ Step 2 预算 ============ -->
-    <section class="screen" data-screen="budget">
+    <!-- ============ Step 2 TA 的轮廓 ============ -->
+    <section class="screen" data-screen="basic">
       <div class="step-head">
         <span class="step-num">Step 02</span>
+        <h2>先勾出 TA 的轮廓</h2>
+        <p class="step-hint">全部可选，不填也能继续。填了推荐会向这个轮廓偏。</p>
+      </div>
+      <div class="blind-form" id="basicForm">
+        <div class="blind-field" data-field="gender">
+          <span class="blind-label">⚧ 性别<span class="blind-req-tag optional">可选</span></span>
+          <div class="blind-options" id="basicGender"></div>
+        </div>
+        <div class="blind-field" data-field="age">
+          <span class="blind-label">🎉 大致年龄段<span class="blind-req-tag optional">可选</span></span>
+          <div class="blind-options" id="basicAge"></div>
+        </div>
+        <div class="blind-field" data-field="job">
+          <span class="blind-label">💼 职业方向<span class="blind-req-tag optional">可选</span></span>
+          <div class="blind-options" id="basicJob"></div>
+        </div>
+        <div class="basic-actions">
+          <button class="primary-btn big" id="basicNextBtn">下一步 →</button>
+          <button class="ghost-btn" id="basicSkipBtn">全部跳过</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Step 3 预算 ============ -->
+    <section class="screen" data-screen="budget">
+      <div class="step-head">
+        <span class="step-num">Step 03</span>
         <h2>这次想花多少？</h2>
         <p class="step-hint">不会判断你大方不大方，只用来挑价位带。</p>
       </div>
       <div class="grid grid-budget" id="budgetGrid"></div>
     </section>
 
-    <!-- ============ Step 3 性格 12 题 ============ -->
+    <!-- ============ Step 4 性格 12 题 ============ -->
     <section class="screen" data-screen="quiz">
       <div class="step-head">
-        <span class="step-num">Step 03</span>
+        <span class="step-num">Step 04</span>
         <h2>关于 TA 的 12 个小问题</h2>
         <p class="step-hint" id="quizSubHint">第 1 / 12 题</p>
       </div>
@@ -152,10 +179,10 @@
       </div>
     </section>
 
-    <!-- ============ Step 4 开放题 ============ -->
+    <!-- ============ Step 5 开放题 ============ -->
     <section class="screen" data-screen="open">
       <div class="step-head">
-        <span class="step-num">Step 04</span>
+        <span class="step-num">Step 05</span>
         <h2>多说一点 TA 的近况</h2>
         <p class="step-hint">这些是侦探破案的关键线索（都可以跳过）。</p>
       </div>

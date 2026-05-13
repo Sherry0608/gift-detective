@@ -628,6 +628,27 @@ textarea, input { font-family: inherit; }
   border: 1px solid #e2d3bb;
   font-weight: 500;
 }
+.basic-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.basic-actions .primary-btn { width: 100%; }
+.basic-actions .ghost-btn {
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  color: var(--ink-mute);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(0,0,0,.15);
+  text-underline-offset: 4px;
+}
+.basic-actions .ghost-btn:hover { color: var(--ink-soft); }
+
 .blind-options {
   display: flex;
   flex-wrap: wrap;

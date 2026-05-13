@@ -2,14 +2,16 @@
 // 礼物侦探事务所 · 交互层
 // ============================================================
 
-const SCREENS = ["cover", "relation", "budget", "quiz", "open", "result", "gallery"];
+const SCREENS = ["cover", "relation", "basic", "budget", "quiz", "open", "result", "gallery"];
+const TOTAL_STEPS = 5;
 const STEP_OF_SCREEN = {       // 进度条对应步骤（0 = 不显示）
-  cover: 0, relation: 1, budget: 2, quiz: 3, open: 4, result: 4, gallery: 0
+  cover: 0, relation: 1, basic: 2, budget: 3, quiz: 4, open: 5, result: 5, gallery: 0
 };
 
 const state = {
   screen: "cover",
   relation: null,
+  basic: { gender: null, age: null, job: null },
   budget: null,
   answers: [],            // 长度 12 的数组，存 "E"/"I"/"M" 等
   quizIdx: 0,
@@ -184,8 +186,8 @@ function goto(screen) {
     wrap.style.display = "none";
   } else {
     wrap.style.display = "block";
-    fill.style.width = (step / 4 * 100) + "%";
-    txt.textContent = `第 ${step} 步 / 共 4 步`;
+    fill.style.width = (step / TOTAL_STEPS * 100) + "%";
+    txt.textContent = `第 ${step} 步 / 共 ${TOTAL_STEPS} 步`;
   }
 
   // 重新调查按钮与图鉴入口
@@ -222,7 +224,7 @@ function renderRelations() {
       state.relation = r.id;
       grid.querySelectorAll(".opt-card").forEach(c => c.classList.remove("selected"));
       btn.classList.add("selected");
-      setTimeout(() => goto("budget"), 280);
+      setTimeout(() => { renderBasicForm(); goto("basic"); }, 280);
     });
     grid.appendChild(btn);
   });
@@ -230,7 +232,44 @@ function renderRelations() {
   // (已移除 Step 1 末尾的“不太了解 TA”入口;封面的盲盒按钮保留)
 }
 
-// ---------- 渲染 Step 2 预算 ----------
+// ---------- 渲染 Step 2 TA 的轮廓（可选 3 字段） ----------
+function renderBasicForm() {
+  const mounts = {
+    gender: { el: document.getElementById("basicGender"), opts: BLIND_FIELDS.gender },
+    age:    { el: document.getElementById("basicAge"),    opts: BLIND_FIELDS.age },
+    job:    { el: document.getElementById("basicJob"),    opts: BLIND_FIELDS.job },
+  };
+  Object.entries(mounts).forEach(([key, { el, opts }]) => {
+    if (!el) return;
+    el.innerHTML = "";
+    opts.forEach(o => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "blind-chip";
+      b.textContent = o.label;
+      if (state.basic[key] === o.id) b.classList.add("picked");
+      b.addEventListener("click", () => {
+        // 点同一个已选中的 chip = 取消选择
+        if (state.basic[key] === o.id) {
+          state.basic[key] = null;
+          b.classList.remove("picked");
+        } else {
+          state.basic[key] = o.id;
+          el.querySelectorAll(".blind-chip").forEach(x => x.classList.remove("picked"));
+          b.classList.add("picked");
+        }
+      });
+      el.appendChild(b);
+    });
+  });
+  document.getElementById("basicNextBtn").onclick = () => goto("budget");
+  document.getElementById("basicSkipBtn").onclick = () => {
+    state.basic = { gender: null, age: null, job: null };
+    goto("budget");
+  };
+}
+
+// ---------- 渲染 Step 3 预算 ----------
 function renderBudgets() {
   const grid = document.getElementById("budgetGrid");
   grid.innerHTML = "";
@@ -391,6 +430,7 @@ const BLIND_FIELDS = {
 function enterBlindMode() {
   // 进入盲盒:重置人格流状态,初始化 7 字段
   state.relation = null;
+  state.basic = { gender: null, age: null, job: null };
   state.budget = null;
   state.answers = [];
   state.persona = null;
@@ -441,6 +481,22 @@ function handleBlindReveal() {
 }
 
 // 返回结构化信号:按字段组织,让打分能区分"命中哪个字段"
+// 人格流 Step 2 “TA 的轮廓” 输出的正向 tag 集合（复用 BLIND_FIELDS 里的 gender/age/job 词表）
+function basicSignalTags() {
+  const out = new Set();
+  const b = state.basic || {};
+  ["gender", "age", "job"].forEach(field => {
+    const id = b[field];
+    if (!id) return;
+    const def = BLIND_FIELDS[field];
+    if (!def) return;
+    const o = def.find(x => x.id === id);
+    if (!o || !o.tags) return;
+    o.tags.forEach(t => out.add(t));
+  });
+  return out;
+}
+
 function blindSignalTags() {
   const negative = new Set();
   let strictAllow = null;
@@ -796,6 +852,18 @@ function recommendGifts(shuffleSeed) {
   const inBudget = g => g.priceMin <= budget.max && g.priceMax >= budget.min;
   const inBudgetGifts = GIFTS.filter(inBudget);
 
+  // 提前计算轮廓信号：Part A / Part B 都要用
+  const basicTags = basicSignalTags();
+  function basicBonus(g) {
+    if (basicTags.size === 0 || !g.tags || !g.tags.length) return 0;
+    let hit = 0;
+    for (const t of g.tags) {
+      if (basicTags.has(t)) hit++;
+      if (hit >= 4) break;
+    }
+    return Math.min(hit, 4) * 0.8;
+  }
+
   // ====== Part 0：专有名词动态卡 ======
   const entities = (typeof extractEntities === "function")
     ? extractEntities(openText, ENTITY_CAP) : [];
@@ -840,6 +908,8 @@ function recommendGifts(shuffleSeed) {
       // 同人格+关系加一点点，用于同分时排序
       if (g.personas.includes(persona)) score += 0.6;
       if (g.relations.includes(relation)) score += 0.4;
+      // 轮廓加分（同分时优先靠轮廓的礼物）
+      score += basicBonus(g);
       return { g, score, hits, matchedTags };
     }).filter(x => x.hits > 0)
       .sort((a, b) => b.score - a.score);
@@ -899,6 +969,8 @@ function recommendGifts(shuffleSeed) {
     else if (tier === 2) s += 5;
     else if (tier === 3) s += 2;
     else s += 0.5;
+    // 轮廓命中：每个 tag 命中 +0.8，最多加 3.2 分（不抢人格×关系主权重）
+    s += basicBonus(g);
     return s;
   }
 
@@ -1383,6 +1455,7 @@ function showToast(msg) {
 // ---------- 重新开始 ----------
 function restart() {
   state.relation = null;
+  state.basic = { gender: null, age: null, job: null };
   state.budget = null;
   state.answers = [];
   state.quizIdx = 0;
@@ -1508,6 +1581,7 @@ function closeDrawer() {
 // ---------- 初始化 ----------
 function init() {
   renderRelations();
+  renderBasicForm();
   renderBudgets();
   goto("cover");
 
